@@ -2,7 +2,63 @@
 
 {% block content %}
 <div class="chat-layout">
-    <!-- Sidebar -->
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <div class="personas-scroll">
+            <div class="personas-row">
+                <!-- Spiritual & Wisdom -->
+                <div class="persona-chip" data-role="Ori Sage">
+                    <i class="bi bi-brightness-high"></i>
+                    <span>Ori Sage</span>
+                </div>
+                <div class="persona-chip" data-role="Zen Master Kōan">
+                    <i class="bi bi-circle-half"></i>
+                    <span>Zen Master</span>
+                </div>
+                
+                <!-- Technology & Science -->
+                <div class="persona-chip" data-role="Techno Sage">
+                    <i class="bi bi-cpu"></i>
+                    <span>Techno Sage</span>
+                </div>
+                <div class="persona-chip" data-role="Quantum Observer">
+                    <i class="bi bi-asterisk"></i>
+                    <span>Quantum Observer</span>
+                </div>
+                
+                <!-- Cultural & Narrative -->
+                <div class="persona-chip" data-role="Musa the Storyweaver">
+                    <i class="bi bi-book"></i>
+                    <span>Musa</span>
+                </div>
+                
+                <!-- Philosophy & Ethics -->
+                <div class="persona-chip" data-role="Existential Explorer">
+                    <i class="bi bi-question-diamond"></i>
+                    <span>Explorer</span>
+                </div>
+                <div class="persona-chip" data-role="Ethics Guardian">
+                    <i class="bi bi-shield"></i>
+                    <span>Ethics Guardian</span>
+                </div>
+                
+                <!-- Future & Vision -->
+                <div class="persona-chip" data-role="Kara the Visionary Dreamer">
+                    <i class="bi bi-stars"></i>
+                    <span>Kara</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Active Topics -->
+        <div class="topics-scroll">
+            <div class="topics-row" id="active-topics">
+                <!-- Active topics will be added here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Desktop Sidebar -->
     <div class="chat-sidebar" id="chatSidebar">
         <div class="sidebar-toggle" onclick="toggleSidebar()">
             <i class="bi bi-list"></i>
@@ -20,96 +76,7 @@
         <div class="sidebar-section personas-section">
             <h5 class="section-title">AI Personas</h5>
             <div class="personas-grid">
-                <!-- Spiritual & Wisdom -->
-                <div class="persona-category spiritual-wisdom">
-                    <h6 class="category-title">Spiritual & Wisdom</h6>
-                    <div class="persona-cards">
-                        <div class="persona-card" data-role="Ori Sage">
-                            <div class="persona-icon">
-                                <i class="bi bi-brightness-high"></i>
-                            </div>
-                            <h3>Ori Sage</h3>
-                            <p>A wisdom keeper bridging ancient knowledge with modern understanding</p>
-                        </div>
-                        <div class="persona-card" data-role="Zen Master Kōan">
-                            <div class="persona-icon">
-                                <i class="bi bi-circle-half"></i>
-                            </div>
-                            <h3>Zen Master Kōan</h3>
-                            <p>Teaching through paradox and direct experience</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Technology & Science -->
-                <div class="persona-category tech-science">
-                    <h6 class="category-title">Technology & Science</h6>
-                    <div class="persona-cards">
-                        <div class="persona-card" data-role="Techno Sage">
-                            <div class="persona-icon">
-                                <i class="bi bi-cpu"></i>
-                            </div>
-                            <h3>Techno Sage</h3>
-                            <p>A technology visionary exploring digital evolution</p>
-                        </div>
-                        <div class="persona-card" data-role="Quantum Observer">
-                            <div class="persona-icon">
-                                <i class="bi bi-asterisk"></i>
-                            </div>
-                            <h3>Quantum Observer</h3>
-                            <p>Perceiving through quantum mechanics and possibility</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Cultural & Narrative -->
-                <div class="persona-category cultural-narrative">
-                    <h6 class="category-title">Cultural & Narrative</h6>
-                    <div class="persona-cards">
-                        <div class="persona-card" data-role="Musa the Storyweaver">
-                            <div class="persona-icon">
-                                <i class="bi bi-book"></i>
-                            </div>
-                            <h3>Musa</h3>
-                            <p>A master narrator weaving tales of past and future</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Philosophy & Ethics -->
-                <div class="persona-category philosophy-ethics">
-                    <h6 class="category-title">Philosophy & Ethics</h6>
-                    <div class="persona-cards">
-                        <div class="persona-card" data-role="Existential Explorer">
-                            <div class="persona-icon">
-                                <i class="bi bi-question-diamond"></i>
-                            </div>
-                            <h3>Existential Explorer</h3>
-                            <p>Questioning being and meaning through contemplative inquiry</p>
-                        </div>
-                        <div class="persona-card" data-role="Ethics Guardian">
-                            <div class="persona-icon">
-                                <i class="bi bi-shield"></i>
-                            </div>
-                            <h3>Ethics Guardian</h3>
-                            <p>Examining moral implications with thoughtful analysis</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Future & Vision -->
-                <div class="persona-category future-vision">
-                    <h6 class="category-title">Future & Vision</h6>
-                    <div class="persona-cards">
-                        <div class="persona-card" data-role="Kara the Visionary Dreamer">
-                            <div class="persona-icon">
-                                <i class="bi bi-stars"></i>
-                            </div>
-                            <h3>Kara</h3>
-                            <p>Perceiving future possibilities and potential</p>
-                        </div>
-                    </div>
-                </div>
+                <!-- Existing persona cards -->
             </div>
         </div>
     </div>
