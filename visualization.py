@@ -15,13 +15,15 @@ class ConversationVisualizer:
     def analyze_conversation(self, thread_id: str) -> Dict[str, Any]:
         """Analyze conversation patterns and generate visualization data."""
         try:
-            # Get thread messages
+            # Get thread by thread_id
             thread = ChatThread.query.filter_by(thread_id=thread_id).first()
             if not thread:
+                logger.error(f"Thread not found: {thread_id}")
                 return {"error": "Thread not found"}
                 
             messages = Message.query.filter_by(thread_id=thread.id).order_by(Message.timestamp).all()
             if not messages:
+                logger.error(f"No messages found for thread: {thread_id}")
                 return {"error": "No messages found"}
             
             # Initialize analysis structures
@@ -70,42 +72,62 @@ class ConversationVisualizer:
     
     def _classify_response_pattern(self, content: str) -> str:
         """Classify the type of response pattern."""
-        if "wisdom" in content.lower() or "reflection" in content.lower():
-            return "wisdom_exploration"
-        elif "technology" in content.lower() or "data" in content.lower():
-            return "technical_analysis"
-        elif "story" in content.lower() or "tale" in content.lower():
-            return "narrative_sharing"
-        elif "future" in content.lower() or "vision" in content.lower():
-            return "visionary_thinking"
-        return "general_dialogue"
+        try:
+            if "wisdom" in content.lower() or "reflection" in content.lower():
+                return "wisdom_exploration"
+            elif "technology" in content.lower() or "data" in content.lower():
+                return "technical_analysis"
+            elif "story" in content.lower() or "tale" in content.lower():
+                return "narrative_sharing"
+            elif "future" in content.lower() or "vision" in content.lower():
+                return "visionary_thinking"
+            return "general_dialogue"
+        except Exception as e:
+            logger.error(f"Error classifying response pattern: {str(e)}")
+            return "general_dialogue"
     
     def _format_nodes(self, messages: List[Message]) -> List[Dict[str, Any]]:
         """Format nodes for the visualization graph."""
-        unique_roles = set(msg.role for msg in messages if msg.role != "user")
-        return [{"id": role, "group": i + 1} for i, role in enumerate(unique_roles)]
+        try:
+            unique_roles = set(msg.role for msg in messages if msg.role != "user")
+            return [{"id": role, "group": i + 1} for i, role in enumerate(unique_roles)]
+        except Exception as e:
+            logger.error(f"Error formatting nodes: {str(e)}")
+            return []
     
     def _format_links(self, interactions: Dict[str, int]) -> List[Dict[str, Any]]:
         """Format links for the visualization graph."""
-        return [
-            {
-                "source": source,
-                "target": target,
-                "value": count
-            }
-            for (source, target), count in interactions.items()
-        ]
+        try:
+            return [
+                {
+                    "source": interaction.split("->")[0],
+                    "target": interaction.split("->")[1],
+                    "value": count
+                }
+                for interaction, count in interactions.items()
+            ]
+        except Exception as e:
+            logger.error(f"Error formatting links: {str(e)}")
+            return []
     
     def _format_patterns(self, patterns: Dict[str, int]) -> List[Dict[str, Any]]:
         """Format response patterns for visualization."""
-        return [
-            {
-                "pattern": pattern.replace("_", " ").title(),
-                "count": count
-            }
-            for pattern, count in patterns.items()
-        ]
+        try:
+            return [
+                {
+                    "pattern": pattern.replace("_", " ").title(),
+                    "count": count
+                }
+                for pattern, count in patterns.items()
+            ]
+        except Exception as e:
+            logger.error(f"Error formatting patterns: {str(e)}")
+            return []
 
     def generate_graph_data(self, thread_id: str) -> Dict[str, Any]:
         """Generate graph visualization data for D3.js."""
-        return self.analyze_conversation(thread_id)
+        try:
+            return self.analyze_conversation(thread_id)
+        except Exception as e:
+            logger.error(f"Error generating graph data: {str(e)}")
+            return {"error": str(e)}

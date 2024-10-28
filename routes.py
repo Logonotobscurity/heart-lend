@@ -4,6 +4,7 @@ from models import db, Topic, ChatThread, Message
 from visualization import ConversationVisualizer
 from dialogue_system import CommunityDialogueSystem
 import os
+import uuid
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -65,32 +66,45 @@ def init_routes(app):
             if not data or not all(k in data for k in ['role', 'context']):
                 return jsonify({"error": "Missing required fields"}), 400
 
-            # Create new thread
-            thread = ChatThread()
-            thread.context = data['context']
-            thread.topic_id = data.get('topic_id')
-            db.session.add(thread)
-            db.session.flush()
+            # Generate unique thread_id
+            thread_id = str(uuid.uuid4())
             
-            # Generate initial response
-            response = dialogue_system.generate_response(data['role'], data['context'])
+            # Create new thread with the generated thread_id
+            thread = ChatThread(
+                thread_id=thread_id,
+                context=data['context'],
+                topic_id=data.get('topic_id')
+            )
             
-            # Store message
-            message = Message()
-            message.thread_id = thread.id
-            message.role = data['role']
-            message.content = response
-            db.session.add(message)
-            db.session.commit()
+            try:
+                db.session.add(thread)
+                db.session.flush()
+                
+                # Generate initial response
+                response = dialogue_system.generate_response(data['role'], data['context'])
+                
+                # Store message
+                message = Message(
+                    thread_id=thread.id,
+                    role=data['role'],
+                    content=response
+                )
+                db.session.add(message)
+                db.session.commit()
 
-            return jsonify({
-                "status": "success",
-                "thread_id": thread.id,
-                "response": response
-            })
+                return jsonify({
+                    "status": "success",
+                    "thread_id": thread_id,
+                    "response": response
+                })
+            except Exception as db_error:
+                db.session.rollback()
+                logger.error(f"Database error in start_dialogue: {str(db_error)}")
+                return jsonify({"error": "Failed to create dialogue thread"}), 500
+                
         except Exception as e:
             logger.error(f"Error starting dialogue: {str(e)}")
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"error": "Failed to process request"}), 500
 
     @app.route('/api/continue_dialogue', methods=['POST'])
     def continue_dialogue():
@@ -100,7 +114,7 @@ def init_routes(app):
                 return jsonify({"error": "Missing required fields"}), 400
 
             # Get thread
-            thread = ChatThread.query.get(data['thread_id'])
+            thread = ChatThread.query.filter_by(thread_id=data['thread_id']).first()
             if not thread:
                 return jsonify({"error": "Thread not found"}), 404
 
@@ -108,29 +122,36 @@ def init_routes(app):
             previous_messages = [msg.content for msg in 
                 Message.query.filter_by(thread_id=thread.id).order_by(Message.timestamp).all()]
 
-            # Generate response
-            response = dialogue_system.generate_layered_response(
-                str(thread.id),
-                data['role'],
-                data['message'],
-                previous_messages
-            )
+            try:
+                # Generate response
+                response = dialogue_system.generate_layered_response(
+                    data['thread_id'],
+                    data['role'],
+                    data['message'],
+                    previous_messages
+                )
 
-            # Store message
-            message = Message()
-            message.thread_id = thread.id
-            message.role = data['role']
-            message.content = response
-            db.session.add(message)
-            db.session.commit()
+                # Store message
+                message = Message(
+                    thread_id=thread.id,
+                    role=data['role'],
+                    content=response
+                )
+                db.session.add(message)
+                db.session.commit()
 
-            return jsonify({
-                "status": "success",
-                "response": response
-            })
+                return jsonify({
+                    "status": "success",
+                    "response": response
+                })
+            except Exception as db_error:
+                db.session.rollback()
+                logger.error(f"Database error in continue_dialogue: {str(db_error)}")
+                return jsonify({"error": "Failed to save dialogue message"}), 500
+                
         except Exception as e:
             logger.error(f"Error continuing dialogue: {str(e)}")
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"error": "Failed to process request"}), 500
 
     @app.route('/visualization/<thread_id>')
     def show_visualization(thread_id):
@@ -139,6 +160,11 @@ def init_routes(app):
     @app.route('/api/visualization/<thread_id>')
     def get_visualization_data(thread_id):
         try:
+            # Find thread by thread_id
+            thread = ChatThread.query.filter_by(thread_id=thread_id).first()
+            if not thread:
+                return jsonify({"error": "Thread not found"}), 404
+                
             visualizer = ConversationVisualizer()
             data = visualizer.generate_graph_data(thread_id)
             return jsonify(data)
