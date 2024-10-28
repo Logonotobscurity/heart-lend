@@ -2,52 +2,74 @@
 
 {% block content %}
 <div class="chat-layout">
-    <!-- Left Sidebar with Personas -->
-    <div class="persona-sidebar" id="personaSidebar">
-        <div class="persona-header">
-            <h2 class="section-title">AI Guides</h2>
-            <p class="guide-text">Choose your conversation partners</p>
+    <!-- Page Title and Instructions -->
+    <div class="chat-header">
+        <div class="container-fluid py-4">
+            <h1 class="h2 mb-3">AI Consciousness Explorer</h1>
+            <p class="lead mb-4">Choose your AI guides and explore topics that interest you. The more personas you engage with, the richer the dialogue becomes.</p>
         </div>
-        <div class="personas-container">
-            {% include "persona_cards.html" %}
+    </div>
+
+    <!-- Horizontal Persona Selector - Moved above chat area -->
+    <div class="persona-selector mb-4">
+        <div class="container-fluid">
+            <h2 class="section-title mb-3">Choose Your AI Guides</h2>
+            <p class="guide-text mb-3">Click to include or exclude personas from the conversation. Each brings a unique perspective.</p>
+            <div class="personas-scroll">
+                <div class="personas-row">
+                    {% include "persona_cards.html" %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clear Section Divider -->
+    <hr class="section-divider my-4">
+
+    <!-- Desktop Fixed Sidebar Toggle -->
+    <button class="sidebar-toggle-fixed d-none d-lg-flex" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Mobile Sidebar Toggle -->
+    <button class="sidebar-toggle-mobile d-lg-none" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+        <span>Topics</span>
+    </button>
+
+    <!-- Desktop Sidebar -->
+    <div class="chat-sidebar" id="chatSidebar">
+        <!-- Topics Section with Clear Header -->
+        <div class="sidebar-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="bi bi-lightbulb me-2"></i>
+                    Suggested Topics
+                </h2>
+                <p class="guide-text">Topics are dynamically suggested based on your conversation. Click any topic to explore it further.</p>
+            </div>
+            <div id="topics-list" class="topics-list">
+                <!-- Loading State -->
+                <div class="loading-indicator text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading topics...</span>
+                    </div>
+                    <p class="mt-2">Loading suggested topics...</p>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Main Chat Area -->
     <div class="chat-main">
-        <!-- Chat Header -->
-        <div class="chat-header">
-            <div class="container-fluid py-3">
-                <h1 class="h3 mb-2">AI Consciousness Explorer</h1>
-                <p class="text-secondary mb-0">Explore consciousness through dialogue</p>
-            </div>
-        </div>
-
-        <!-- Conversation Controls -->
-        <div class="conversation-controls">
-            <div class="container-fluid py-2">
-                <div class="row g-3">
-                    <div class="col-md-8">
-                        <div class="style-buttons d-flex gap-2">
-                            <button class="btn btn-outline-secondary active" data-style="balanced">
-                                <i class="bi bi-circle-half"></i> Balanced
-                            </button>
-                            <button class="btn btn-outline-secondary" data-style="philosophical">
-                                <i class="bi bi-book"></i> Philosophical
-                            </button>
-                            <button class="btn btn-outline-secondary" data-style="practical">
-                                <i class="bi bi-gear"></i> Practical
-                            </button>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="depth-control">
-                            <label class="form-label mb-1">Conversation Depth</label>
-                            <input type="range" class="form-range" id="depthSlider" min="1" max="3" step="0.5" value="1.5">
-                            <div class="depth-labels">
-                                <span>Surface</span>
-                                <span>Deep</span>
-                            </div>
+        <!-- Active Topics with Clear Header -->
+        <div class="active-topics-section">
+            <div class="container-fluid">
+                <h3 class="h6 mb-2">Active Topics</h3>
+                <div class="active-topics">
+                    <div class="topics-scroll">
+                        <div class="topics-row" id="active-topics">
+                            <!-- Active topics will be added here -->
                         </div>
                     </div>
                 </div>
@@ -59,11 +81,11 @@
             <!-- Welcome Message -->
             <div class="message message-system">
                 <strong>Welcome!</strong>
-                <p>Begin your journey by selecting AI guides and adjusting conversation settings. Your dialogue will inspire personalized topic suggestions.</p>
+                <p>Begin your journey by selecting AI guides above and starting a conversation. Your dialogue will inspire personalized topic suggestions.</p>
             </div>
         </div>
         
-        <!-- Fixed Input Area -->
+        <!-- Input Area -->
         <div class="input-container">
             <div class="container-fluid">
                 <div class="input-wrapper">
@@ -73,26 +95,6 @@
                         <i class="bi bi-send"></i>
                     </button>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Right Sidebar -->
-    <div class="topic-sidebar" id="topicSidebar">
-        <div class="topic-header">
-            <h2 class="section-title">
-                <i class="bi bi-lightbulb me-2"></i>
-                Suggested Topics
-            </h2>
-            <p class="guide-text">Click any topic to explore it further</p>
-        </div>
-        <div id="topics-list" class="topics-list">
-            <!-- Loading State -->
-            <div class="loading-indicator text-center py-4">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading topics...</span>
-                </div>
-                <p class="mt-2">Loading suggested topics...</p>
             </div>
         </div>
     </div>
