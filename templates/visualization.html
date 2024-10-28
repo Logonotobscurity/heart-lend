@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <h2 class="h3">Conversation Patterns</h2>
+            <p class="text-muted">Visualizing interaction patterns and dialogue flow</p>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <!-- Interaction Graph -->
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h3 class="h5 mb-3">Interaction Flow</h3>
+                    <div id="interaction-graph" class="visualization-container"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Response Patterns -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h3 class="h5 mb-3">Response Patterns</h3>
+                    <div id="pattern-chart" class="visualization-container"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Depth Progression -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="h5 mb-3">Conversation Depth</h3>
+                    <div id="depth-chart" class="visualization-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="/static/js/visualization.js"></script>
+{% endblock %}
