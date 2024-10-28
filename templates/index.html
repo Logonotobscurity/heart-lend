@@ -36,7 +36,66 @@
                 </div>
                 <a href="/chat" class="btn btn-primary btn-lg">Begin Your Journey</a>
             </div>
+
+            <!-- Topics Section -->
+            <div class="topics-section mb-5">
+                <h2 class="h3 mb-4">Featured Topics</h2>
+                <div class="row g-4" id="featured-topics">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">Loading Topics...</h5>
+                                <div class="loading-indicator text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading topics...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load featured topics
+    fetch('/api/topics')
+        .then(response => response.json())
+        .then(data => {
+            const topicsContainer = document.getElementById('featured-topics');
+            topicsContainer.innerHTML = ''; // Clear loading state
+            
+            data.slice(0, 4).forEach(topic => {
+                const topicCard = document.createElement('div');
+                topicCard.className = 'col-md-6';
+                topicCard.innerHTML = `
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">${topic.title}</h5>
+                            <p class="card-text small">${topic.description}</p>
+                            <span class="badge bg-secondary">${topic.category}</span>
+                        </div>
+                        <div class="card-footer bg-transparent border-0">
+                            <a href="/chat?topic=${topic.id}" class="btn btn-outline-primary btn-sm">
+                                Explore Topic
+                            </a>
+                        </div>
+                    </div>
+                `;
+                topicsContainer.appendChild(topicCard);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading topics:', error);
+            document.getElementById('featured-topics').innerHTML = `
+                <div class="col-12 text-center">
+                    <p class="text-danger">Failed to load topics. Please try again later.</p>
+                </div>
+            `;
+        });
+});
+</script>
 {% endblock %}

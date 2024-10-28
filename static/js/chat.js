@@ -4,15 +4,6 @@ let conversationState = {
     depth: 1.5
 };
 
-// Global variables for visualization
-let interactionGraph = null;
-let conversationData = {
-    activePersonas: new Set(),
-    interactions: [],
-    messageCount: 0,
-    dialogueDepth: 0
-};
-
 // Global variables for chat
 let currentThread = null;
 let selectedTopic = null;
@@ -33,7 +24,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initializePersonas();
     initializeScrolling();
     initializeMessageHandling();
-    initializeVisualization();
     loadTopics();
 });
 
@@ -123,68 +113,115 @@ function setConversationStyle(style) {
 
 function setConversationDepth(depth) {
     conversationState.depth = depth;
-    document.getElementById('dialogue-depth').textContent = depth.toFixed(1);
 }
 
-// Visualization Functions
-function initializeVisualization() {
-    const ctx = document.getElementById('interaction-graph');
-    if (!ctx) return;
-
-    interactionGraph = new Chart(ctx, {
-        type: 'radar',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Interaction Patterns',
-                data: [],
-                fill: true,
-                backgroundColor: 'rgba(var(--bs-primary-rgb), 0.2)',
-                borderColor: 'rgb(var(--bs-primary-rgb))',
-                pointBackgroundColor: 'rgb(var(--bs-primary-rgb))',
-                pointBorderColor: '#fff',
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: 'rgb(var(--bs-primary-rgb))'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                r: {
-                    angleLines: {
-                        display: true,
-                        color: 'rgba(var(--bs-secondary-rgb), 0.1)'
-                    },
-                    grid: {
-                        color: 'rgba(var(--bs-secondary-rgb), 0.1)'
-                    },
-                    ticks: {
-                        display: false
-                    }
-                }
+// Message Handling Functions
+async function handleMessageSend() {
+    if (!messageInput || !sendButton || !chatMessages) return;
+    
+    const message = messageInput.value.trim();
+    if (!message) return;
+    
+    messageInput.disabled = true;
+    sendButton.disabled = true;
+    sendButton.innerHTML = `
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        <span class="visually-hidden">Sending...</span>
+    `;
+    
+    try {
+        appendMessage('User', message);
+        messageInput.value = '';
+        
+        const activeRole = getNextPersona();
+        
+        if (!currentThread) {
+            const response = await fetch('/api/start_dialogue', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    role: activeRole,
+                    context: message,
+                    topic_id: selectedTopic,
+                    style: conversationState.style,
+                    depth: conversationState.depth
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            if (data.status === "success") {
+                currentThread = data.thread_id;
+                appendMessage(activeRole, data.response);
+                await suggestTopics(message);
+            } else {
+                throw new Error(data.message || "Failed to start dialogue");
+            }
+        } else {
+            const response = await fetch('/api/continue_dialogue', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    thread_id: currentThread,
+                    role: activeRole,
+                    message: message,
+                    style: conversationState.style,
+                    depth: conversationState.depth
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            if (data.status === "success") {
+                appendMessage(activeRole, data.response);
+            } else {
+                throw new Error(data.message || "Failed to continue dialogue");
             }
         }
-    });
-
-    updateVisualization();
+    } catch (error) {
+        console.error('Error:', error);
+        appendSystemMessage(`An error occurred: ${error.message}. Please try again.`);
+        
+        if (!currentThread) {
+            currentThread = null;
+        }
+    } finally {
+        messageInput.disabled = false;
+        sendButton.disabled = false;
+        sendButton.innerHTML = '<i class="bi bi-send"></i>';
+    }
 }
 
-function updateVisualization() {
-    if (!interactionGraph) return;
+function appendMessage(role, content) {
+    if (!chatMessages) return;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message message-${role.toLowerCase().split(' ')[0]}`;
+    messageDiv.innerHTML = `
+        <strong>${role}:</strong>
+        <p>${content}</p>
+    `;
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
 
-    document.getElementById('active-personas-count').textContent = conversationData.activePersonas.size;
-    document.getElementById('total-interactions').textContent = conversationData.messageCount;
-    document.getElementById('dialogue-depth').textContent = conversationData.dialogueDepth.toFixed(1);
-
-    const labels = Array.from(conversationData.activePersonas);
-    const data = labels.map(persona => {
-        return conversationData.interactions.filter(i => i.persona === persona).length;
-    });
-
-    interactionGraph.data.labels = labels;
-    interactionGraph.data.datasets[0].data = data;
-    interactionGraph.update();
+function appendSystemMessage(content) {
+    if (!chatMessages) return;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message message-system';
+    messageDiv.innerHTML = `
+        <strong>System:</strong>
+        <p class="text-danger">${content}</p>
+    `;
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
 // Initialize Message Handling
@@ -250,4 +287,62 @@ function toggleSidebar() {
     }
 }
 
-// Rest of the existing code (message handling, topic management, etc.) remains unchanged...
+// Topic Management
+async function suggestTopics(context) {
+    try {
+        const response = await fetch('/api/topics/suggest', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ context })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (data.status === "success") {
+            updateTopicsList(data.topics);
+        }
+    } catch (error) {
+        console.error('Error suggesting topics:', error);
+    }
+}
+
+function updateTopicsList(topics) {
+    const topicsList = document.getElementById('topics-list');
+    if (!topicsList) return;
+    
+    topicsList.innerHTML = topics.map(topic => `
+        <div class="topic-card" data-topic-id="${topic.id}">
+            <h3 class="topic-title h6">${topic.title}</h3>
+            <p class="topic-description small">${topic.description}</p>
+            <span class="badge bg-secondary">${topic.category}</span>
+        </div>
+    `).join('');
+    
+    // Add click handlers to new topic cards
+    topicsList.querySelectorAll('.topic-card').forEach(card => {
+        card.addEventListener('click', () => {
+            selectedTopic = card.dataset.topicId;
+            document.querySelectorAll('.topic-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+        });
+    });
+}
+
+// Load initial topics
+async function loadTopics() {
+    try {
+        const response = await fetch('/api/topics');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const topics = await response.json();
+        updateTopicsList(topics);
+    } catch (error) {
+        console.error('Error loading topics:', error);
+        const topicsList = document.getElementById('topics-list');
+        if (topicsList) {
+            topicsList.innerHTML = '<p class="text-danger">Failed to load topics. Please try again later.</p>';
+        }
+    }
+}
