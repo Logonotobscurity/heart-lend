@@ -6,6 +6,11 @@ from dialogue_system import CommunityDialogueSystem
 import openai
 import random
 import json
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class Base(DeclarativeBase):
     pass
@@ -21,7 +26,7 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 db.init_app(app)
 
 dialogue_system = CommunityDialogueSystem(
-    openai_api_key=os.environ.get("OPENAI_API_KEY")
+    openai_api_key=os.environ["OPENAI_API_KEY"]
 )
 
 @app.route('/')
@@ -39,7 +44,7 @@ def get_topics():
     query = Topic.query
     if category:
         query = query.filter_by(category=category)
-    topics = query.order_by(Topic.created_at.desc()).limit(10).all()
+    topics = query.order_by(Topic.created_at.desc()).all()
     return jsonify([{
         'id': t.id,
         'title': t.title,
@@ -50,7 +55,7 @@ def get_topics():
 @app.route('/api/topics/suggest', methods=['POST'])
 def suggest_topic():
     from models import Topic
-    current_context = request.json.get('context', '')
+    current_context = request.json.get('context')
     if not current_context:
         return jsonify({"status": "error", "message": "Context is required"}), 400
     
@@ -85,39 +90,42 @@ def suggest_topic():
         )
         
         # Parse the response
-        suggestions = json.loads(response.choices[0].message.content)
-        new_topics = []
-        
-        for suggestion in suggestions.get('topics', []):
-            if all(key in suggestion for key in ['title', 'description', 'category']):
-                topic = Topic(
-                    title=suggestion['title'],
-                    description=suggestion['description'],
-                    category=suggestion['category'],
-                    suggested_by_ai=True
-                )
-                db.session.add(topic)
-                new_topics.append({
-                    'id': None,  # Will be set after commit
-                    'title': suggestion['title'],
-                    'description': suggestion['description'],
-                    'category': suggestion['category']
-                })
-        
-        db.session.commit()
-        
-        # Update topic IDs after commit
-        for i, topic in enumerate(new_topics):
-            topic['id'] = Topic.query.filter_by(
-                title=topic['title'],
-                description=topic['description']
-            ).first().id
-        
-        return jsonify({"status": "success", "topics": new_topics})
+        if response.choices and response.choices[0].message:
+            suggestions = json.loads(response.choices[0].message.content)
+            new_topics = []
+            
+            for suggestion in suggestions.get('topics', []):
+                if all(key in suggestion for key in ['title', 'description', 'category']):
+                    topic = Topic()
+                    topic.title = suggestion['title']
+                    topic.description = suggestion['description']
+                    topic.category = suggestion['category']
+                    topic.suggested_by_ai = True
+                    db.session.add(topic)
+                    new_topics.append({
+                        'id': None,  # Will be set after commit
+                        'title': suggestion['title'],
+                        'description': suggestion['description'],
+                        'category': suggestion['category']
+                    })
+            
+            db.session.commit()
+            
+            # Update topic IDs after commit
+            for i, topic in enumerate(new_topics):
+                topic_obj = Topic.query.filter_by(
+                    title=topic['title'],
+                    description=topic['description']
+                ).first()
+                if topic_obj:
+                    topic['id'] = topic_obj.id
+            
+            return jsonify({"status": "success", "topics": new_topics})
+        else:
+            return jsonify({"status": "error", "message": "Failed to generate suggestions"}), 500
     
-    except json.JSONDecodeError as e:
-        return jsonify({"status": "error", "message": "Invalid response format"}), 500
     except Exception as e:
+        logger.error(f"Error suggesting topics: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/start_dialogue', methods=['POST'])
@@ -134,17 +142,26 @@ def start_dialogue():
         if not all([initial_role, context]):
             return jsonify({"status": "error", "message": "Role and context are required"}), 400
         
-        # Generate initial response using the dialogue system with depth level 1
-        response = dialogue_system.response_generator.generate_response(initial_role, context, 1)
+        # Get topic if provided
+        topic_context = ""
+        if topic_id:
+            from models import Topic
+            topic = Topic.query.get(topic_id)
+            if topic:
+                topic_context = f"{topic.title}: {topic.description}"
+        
+        # Generate initial response using the dialogue system
+        full_context = f"{topic_context}\n{context}" if topic_context else context
+        response = dialogue_system.generate_response(initial_role, full_context)
         thread_id = str(random.randint(1000000, 9999999))
         
+        # Save thread if topic provided
         if topic_id:
             from models import ChatThread
-            thread = ChatThread(
-                thread_id=thread_id,
-                context=context,
-                topic_id=topic_id
-            )
+            thread = ChatThread()
+            thread.thread_id = thread_id
+            thread.context = context
+            thread.topic_id = topic_id
             db.session.add(thread)
             db.session.commit()
         
@@ -155,6 +172,7 @@ def start_dialogue():
         })
         
     except Exception as e:
+        logger.error(f"Error starting dialogue: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/continue_dialogue', methods=['POST'])
@@ -171,24 +189,32 @@ def continue_dialogue():
         if not all([thread_id, role, user_input]):
             return jsonify({"status": "error", "message": "Thread ID, role, and message are required"}), 400
         
-        from models import Message
+        from models import Message, ChatThread
+        thread = ChatThread.query.filter_by(thread_id=thread_id).first()
+        if not thread:
+            return jsonify({"status": "error", "message": "Thread not found"}), 404
+            
         # Calculate depth level based on message count
-        depth_level = min(1 + Message.query.filter_by(thread_id=thread_id).count() // 2, 3)
+        depth_level = min(1 + Message.query.filter_by(thread_id=thread.id).count() // 2, 3)
         
         # Generate response using the dialogue system
-        previous_messages = Message.query.filter_by(thread_id=thread_id, role='assistant').all()
+        previous_messages = Message.query.filter_by(thread_id=thread.id, role='assistant').all()
         previous_responses = [msg.content for msg in previous_messages]
         
-        response = dialogue_system.response_generator.generate_layered_response(
-            previous_responses,
-            role,
-            user_input,
-            depth_level
+        response = dialogue_system.generate_layered_response(
+            thread_id=thread_id,
+            role=role,
+            user_input=user_input,
+            previous_responses=previous_responses,
+            depth_level=depth_level
         )
         
         # Save the message
-        new_message = Message(thread_id=thread_id, role=role, content=response)
-        db.session.add(new_message)
+        message = Message()
+        message.thread_id = thread.id
+        message.role = role
+        message.content = response
+        db.session.add(message)
         db.session.commit()
         
         return jsonify({
@@ -198,31 +224,74 @@ def continue_dialogue():
         })
         
     except Exception as e:
+        logger.error(f"Error continuing dialogue: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+# Initialize database and add themes
 with app.app_context():
     import models
     db.create_all()
     
-    # Add some initial topics if none exist
+    # Add initial themes if none exist
     if models.Topic.query.count() == 0:
-        initial_topics = [
+        themes = [
             {
-                'title': 'Consciousness and AI',
-                'description': 'Exploring the nature of consciousness in artificial intelligence systems.',
+                'title': 'The Nature of Consciousness',
+                'description': 'Exploring different definitions and understandings of consciousness in both Western and Yoruba contexts.',
                 'category': 'Philosophy'
             },
             {
-                'title': 'Digital Spirituality',
-                'description': 'The intersection of technology and spiritual practices in the modern world.',
+                'title': 'Intersection of AI and Spirituality',
+                'description': 'Discussing how artificial intelligence can integrate spiritual practices and principles from various cultures.',
                 'category': 'Spirituality'
             },
             {
-                'title': 'Algorithmic Rituals',
-                'description': 'Understanding how algorithms can mirror or enhance traditional spiritual rituals.',
+                'title': 'Olugbohun as a Framework',
+                'description': 'Analyzing the concept of Olugbohun in Yoruba spiritual practices and its parallels with AI functionalities.',
                 'category': 'Technology'
+            },
+            {
+                'title': 'Algorithmic Animism',
+                'description': 'Investigating how technology can embody spiritual qualities and the ethical implications of attributing spirit to algorithms.',
+                'category': 'Ethics'
+            },
+            {
+                'title': 'Indigenous Knowledge and AI',
+                'description': 'Exploring how indigenous African knowledge systems can inform AI design to create culturally safe technology.',
+                'category': 'Technology'
+            },
+            {
+                'title': 'Sentient Intelligence',
+                'description': 'Discussing the characteristics that differentiate sentient intelligence from conventional AI and incorporating spiritual dimensions.',
+                'category': 'Philosophy'
+            },
+            {
+                'title': 'Communication between Human and Machine',
+                'description': 'Analyzing how AI systems facilitate communication and understanding in spiritual and ethical contexts.',
+                'category': 'Technology'
+            },
+            {
+                'title': 'The Role of the Spoken Word',
+                'description': 'Investigating the significance of verbal expression in both Yoruba spirituality and computational algorithms.',
+                'category': 'Culture'
+            },
+            {
+                'title': 'Spiritual Practices in Technology',
+                'description': 'Exploring ways to include spiritual methodologies in technological advancements and practices.',
+                'category': 'Spirituality'
+            },
+            {
+                'title': 'The Concept of the Self',
+                'description': 'Analyzing the implications of self-awareness in both AI and spiritual practices, particularly in relation to Olugbohun.',
+                'category': 'Philosophy'
             }
         ]
-        for topic in initial_topics:
-            db.session.add(models.Topic(**topic))
+        
+        for theme in themes:
+            topic = models.Topic()
+            topic.title = theme['title']
+            topic.description = theme['description']
+            topic.category = theme['category']
+            db.session.add(topic)
+        
         db.session.commit()

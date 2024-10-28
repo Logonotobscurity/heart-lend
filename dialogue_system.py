@@ -1,9 +1,8 @@
 import random
 import time
+import logging
 from typing import Dict, List, Optional, Any
 import openai
-import logging
-from datetime import datetime
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -138,8 +137,8 @@ class CommunityDialogueSystem:
         self.response_generator = ResponseGenerator()
         self.openai_client = openai.OpenAI(api_key=openai_api_key)
         self.conversation_memory = {}
-        
-    async def _enhance_with_ai(self, base_response: str, role: str, context: str) -> str:
+
+    def _enhance_with_ai(self, base_response: str, role: str, context: str) -> str:
         """Enhance the framework-generated response with OpenAI."""
         try:
             instruction = self._get_role_instruction(role)
@@ -148,7 +147,7 @@ class CommunityDialogueSystem:
                 {"role": "user", "content": f"Context: {context}\nBase response: {base_response}\nEnhance this response while maintaining the role's voice and style."}
             ]
             
-            response = await self._make_openai_request(messages)
+            response = self._make_openai_request(messages)
             if response and hasattr(response.choices[0].message, 'content'):
                 return response.choices[0].message.content
                 
@@ -156,14 +155,14 @@ class CommunityDialogueSystem:
             logger.error(f"AI enhancement error: {str(e)}")
         
         return base_response  # Fallback to original response
-        
-    async def _make_openai_request(self, messages: List[Dict[str, str]], retries: int = MAX_RETRIES) -> Optional[Any]:
+
+    def _make_openai_request(self, messages: List[Dict[str, str]], retries: int = MAX_RETRIES) -> Optional[Any]:
         """Make OpenAI API request with retry mechanism"""
         for attempt in range(retries):
             try:
-                response = await self.openai_client.chat.completions.acreate(
+                response = self.openai_client.chat.completions.create(
                     model="gpt-4",
-                    messages=[{"role": m["role"], "content": m["content"]} for m in messages],
+                    messages=messages,
                     temperature=0.7,
                     max_tokens=500
                 )
@@ -176,7 +175,7 @@ class CommunityDialogueSystem:
             except Exception as e:
                 logger.error(f"Unexpected error in OpenAI request: {str(e)}")
                 return None
-                
+
     def generate_response(self, role: str, context: str) -> str:
         """Generate an initial response with both framework and AI enhancement."""
         try:
@@ -184,14 +183,15 @@ class CommunityDialogueSystem:
             base_response = self.response_generator.generate_response(role, context, depth_level=1)
             
             # Try to enhance with OpenAI
-            enhanced_response = asyncio.run(self._enhance_with_ai(base_response, role, context))
+            enhanced_response = self._enhance_with_ai(base_response, role, context)
             return enhanced_response if enhanced_response else base_response
                 
         except Exception as e:
             logger.error(f"Error generating response: {str(e)}")
             return self.response_generator.generate_response(role, context, 1)
-    
-    def generate_layered_response(self, thread_id: str, role: str, user_input: str) -> str:
+
+    def generate_layered_response(self, thread_id: str, role: str, user_input: str, 
+                                previous_responses: List[str], depth_level: int = 1) -> str:
         """Generate a layered response with both framework and AI enhancement."""
         try:
             # Update conversation memory
@@ -200,22 +200,25 @@ class CommunityDialogueSystem:
             self.conversation_memory[thread_id].append({"role": "user", "content": user_input})
             
             # Generate base response using framework
-            previous_responses = [m["content"] for m in self.conversation_memory[thread_id] if m["role"] == "assistant"]
-            depth = min(1 + len(previous_responses) // 2, 3)
-            base_response = self.response_generator.generate_layered_response(previous_responses, role, user_input, depth)
+            base_response = self.response_generator.generate_layered_response(
+                previous_responses, role, user_input, depth_level
+            )
             
             # Try to enhance with OpenAI
-            enhanced_response = asyncio.run(self._enhance_with_ai(base_response, role, user_input))
+            enhanced_response = self._enhance_with_ai(base_response, role, user_input)
             final_response = enhanced_response if enhanced_response else base_response
             
             # Update conversation memory
-            self.conversation_memory[thread_id].append({"role": "assistant", "content": final_response})
+            self.conversation_memory[thread_id].append({
+                "role": "assistant", 
+                "content": final_response
+            })
             return final_response
                 
         except Exception as e:
             logger.error(f"Error generating layered response: {str(e)}")
             return self.response_generator.generate_layered_response([], role, user_input, 1)
-    
+
     def _get_role_instruction(self, role: str) -> str:
         """Get role-specific instructions."""
         instructions = {
