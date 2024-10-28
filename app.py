@@ -11,7 +11,6 @@ from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.exceptions import HTTPException
 from typing import Dict, Any, Optional
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -31,7 +30,6 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 }
 db.init_app(app)
 
-# Initialize dialogue system with error handling
 try:
     dialogue_system = CommunityDialogueSystem(
         openai_api_key=os.environ["OPENAI_API_KEY"]
@@ -44,7 +42,6 @@ except Exception as e:
     raise SystemExit("Application failed to initialize")
 
 def handle_error(error: Exception) -> tuple[Dict[str, Any], int]:
-    """Standardized error handling function"""
     if isinstance(error, HTTPException):
         return {
             "status": "error",
@@ -61,7 +58,6 @@ def handle_error(error: Exception) -> tuple[Dict[str, Any], int]:
 
 @app.errorhandler(Exception)
 def handle_exception(e):
-    """Global exception handler for all routes"""
     response, status_code = handle_error(e)
     return jsonify(response), status_code
 
@@ -169,7 +165,6 @@ def suggest_topic():
             
             db.session.commit()
             
-            # Update topic IDs after commit
             for i, topic in enumerate(new_topics):
                 topic_obj = Topic.query.filter_by(
                     title=topic['title'],
@@ -213,6 +208,8 @@ def start_dialogue():
         initial_role = data.get('role')
         context = data.get('context')
         topic_id = data.get('topic_id')
+        style = data.get('style', 'balanced')
+        depth = data.get('depth', 1.5)
         
         if not all([initial_role, context]):
             return jsonify({
@@ -221,11 +218,17 @@ def start_dialogue():
                 "code": 400
             }), 400
         
-        response = dialogue_system.generate_response(initial_role, context)
+        response = dialogue_system.generate_response(
+            initial_role, 
+            context,
+            style=style,
+            depth=depth
+        )
+        
         thread_id = str(random.randint(1000000, 9999999))
         
         try:
-            from models import ChatThread, Topic
+            from models import ChatThread, Topic, Message
             thread = ChatThread(
                 thread_id=thread_id,
                 context=context
@@ -235,10 +238,17 @@ def start_dialogue():
                 topic = Topic.query.get(topic_id)
                 if topic:
                     thread.topic = topic
-                else:
-                    logger.warning(f"Topic {topic_id} not found")
             
             db.session.add(thread)
+            
+            message = Message(
+                thread_id=thread.id,
+                role=initial_role,
+                content=response,
+                style=style,
+                depth=depth
+            )
+            db.session.add(message)
             db.session.commit()
             
             return jsonify({
@@ -273,6 +283,8 @@ def continue_dialogue():
         thread_id = data.get('thread_id')
         role = data.get('role')
         user_input = data.get('message')
+        style = data.get('style', 'balanced')
+        depth = data.get('depth', 1.5)
         
         if not all([thread_id, role, user_input]):
             return jsonify({
@@ -291,7 +303,6 @@ def continue_dialogue():
                 "code": 404
             }), 404
         
-        depth_level = min(1 + Message.query.filter_by(thread_id=thread.id).count() // 2, 3)
         previous_messages = Message.query.filter_by(thread_id=thread.id, role='assistant').all()
         previous_responses = [msg.content for msg in previous_messages]
         
@@ -301,13 +312,16 @@ def continue_dialogue():
                 role=role,
                 user_input=user_input,
                 previous_responses=previous_responses,
-                depth_level=depth_level
+                style=style,
+                depth=depth
             )
             
             message = Message(
                 thread_id=thread.id,
                 role=role,
-                content=response
+                content=response,
+                style=style,
+                depth=depth
             )
             db.session.add(message)
             db.session.commit()
@@ -343,7 +357,6 @@ def init_db():
                     'description': 'Exploring different definitions and understandings of consciousness in both Western and Yoruba contexts.',
                     'category': 'Philosophy'
                 },
-                # ... [Previous themes remain unchanged]
             ]
             
             try:

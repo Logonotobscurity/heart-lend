@@ -1,14 +1,66 @@
-/* Previous CSS styles remain unchanged... */
+/* Persona Selector Styles */
+.persona-selector {
+    background: var(--bs-dark);
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.personas-scroll {
+    overflow-x: auto;
+    padding: 1rem 0;
+    scroll-behavior: smooth;
+}
+
+.personas-row {
+    display: flex;
+    gap: 1rem;
+    padding: 0 1rem;
+}
+
+/* Direction Controls Styles */
+.direction-controls {
+    background: var(--bs-dark);
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.direction-options .card {
+    height: 100%;
+    border: none;
+}
+
+.style-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.style-buttons .btn {
+    flex: 1;
+    min-width: 120px;
+}
+
+.depth-control {
+    padding: 0.5rem 0;
+}
+
+.depth-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+    color: var(--bs-secondary-color);
+    font-size: 0.875rem;
+}
 
 /* Visualization Section Styles */
 .visualization-section {
-    background: var(--chat-bg);
+    background: var(--bs-dark);
     padding: 2rem 0;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--bs-border-color);
 }
 
 .visualization-container {
-    background: var(--sidebar-bg);
+    background: var(--bs-dark-subtle);
     border-radius: 1rem;
     padding: 1.5rem;
     height: 400px;
@@ -25,7 +77,7 @@
     bottom: 1.5rem;
     left: 1.5rem;
     right: 1.5rem;
-    background: var(--chat-bg);
+    background: var(--bs-dark);
     border-radius: 0.5rem;
     padding: 1rem;
 }
@@ -33,7 +85,7 @@
 .stat-card {
     text-align: center;
     padding: 1rem;
-    background: var(--sidebar-bg);
+    background: var(--bs-dark-subtle);
     border-radius: 0.5rem;
 }
 
@@ -49,7 +101,52 @@
     color: var(--bs-primary);
 }
 
-/* Responsive adjustments */
+/* Chat Layout Styles */
+.chat-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: margin-right 0.3s ease;
+}
+
+.messages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+.message {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: var(--bs-dark-subtle);
+}
+
+.message-system {
+    background: var(--bs-dark);
+    border: 1px solid var(--bs-border-color);
+}
+
+.input-container {
+    padding: 1rem;
+    background: var(--bs-dark);
+    border-top: 1px solid var(--bs-border-color);
+}
+
+.input-wrapper {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Responsive Adjustments */
 @media (max-width: 991.98px) {
     .visualization-container {
         height: 300px;
@@ -67,5 +164,3 @@
         margin-bottom: 1rem;
     }
 }
-
-/* Previous CSS styles remain unchanged... */

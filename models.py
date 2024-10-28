@@ -25,3 +25,5 @@ class Message(db.Model):
     role = db.Column(db.String(64))
     content = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    style = db.Column(db.String(32), default='balanced')  # New field for conversation style
+    depth = db.Column(db.Float, default=1.5)  # New field for conversation depth
