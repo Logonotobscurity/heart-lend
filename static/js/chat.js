@@ -18,6 +18,16 @@ let conversationState = {
     depth: 1.5
 };
 
+// Sidebar Toggle
+function toggleSidebar() {
+    const sidebar = document.getElementById('chatSidebar');
+    const mainContent = document.querySelector('.chat-main');
+    if (sidebar && mainContent) {
+        sidebar.classList.toggle('show');
+        mainContent.classList.toggle('sidebar-open');
+    }
+}
+
 // Message Handling Functions
 function handleMessageSend() {
     if (!messageInput || !sendButton || !chatMessages) {
@@ -140,12 +150,142 @@ function appendSystemMessage(content) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
+// Direction Control Functions
+function initializeDirectionControls() {
+    const styleButtons = document.querySelectorAll('.style-buttons .btn');
+    if (styleButtons) {
+        styleButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const style = this.dataset.style;
+                setConversationStyle(style);
+            });
+        });
+    }
+
+    const depthSlider = document.getElementById('depthSlider');
+    if (depthSlider) {
+        depthSlider.addEventListener('input', function() {
+            setConversationDepth(parseFloat(this.value));
+        });
+    }
+}
+
+function setConversationStyle(style) {
+    conversationState.style = style;
+    
+    const styleButtons = document.querySelectorAll('.style-buttons .btn');
+    if (styleButtons) {
+        styleButtons.forEach(button => {
+            button.classList.remove('active');
+            if (button.dataset.style === style) {
+                button.classList.add('active');
+            }
+        });
+    }
+}
+
+function setConversationDepth(depth) {
+    conversationState.depth = depth;
+}
+
+// Persona Management
+function initializePersonas() {
+    const personaCards = document.querySelectorAll('.persona-card');
+    if (personaCards) {
+        personaCards.forEach(card => {
+            card.addEventListener('click', function() {
+                const role = this.dataset.role;
+                togglePersona(role, this);
+            });
+        });
+    }
+}
+
+function togglePersona(role, element) {
+    if (!element) return;
+    
+    if (excludedPersonas.has(role)) {
+        excludedPersonas.delete(role);
+        element.classList.remove('excluded');
+        element.classList.add('active');
+    } else {
+        excludedPersonas.add(role);
+        element.classList.add('excluded');
+        element.classList.remove('active');
+    }
+}
+
+function getNextPersona() {
+    const activePersonas = availablePersonas.filter(p => !excludedPersonas.has(p));
+    if (activePersonas.length === 0) return availablePersonas[0];
+    
+    currentPersonaIndex = (currentPersonaIndex + 1) % activePersonas.length;
+    
+    const personaCards = document.querySelectorAll('.persona-card');
+    if (personaCards) {
+        personaCards.forEach(card => {
+            card.classList.remove('active');
+            if (card.dataset.role === activePersonas[currentPersonaIndex]) {
+                card.classList.add('active');
+            }
+        });
+    }
+    
+    return activePersonas[currentPersonaIndex];
+}
+
+// Topic Management
+async function suggestTopics(context) {
+    try {
+        const response = await fetch('/api/topics/suggest', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ context })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (data.status === "success") {
+            updateTopicsList(data.topics);
+        }
+    } catch (error) {
+        console.error('Error suggesting topics:', error);
+    }
+}
+
+function updateTopicsList(topics) {
+    const topicsList = document.getElementById('topics-list');
+    if (!topicsList) return;
+    
+    topicsList.innerHTML = topics.map(topic => `
+        <div class="topic-card" data-topic-id="${topic.id}">
+            <h3 class="topic-title h6">${topic.title}</h3>
+            <p class="topic-description small">${topic.description}</p>
+            <span class="badge bg-secondary">${topic.category}</span>
+        </div>
+    `).join('');
+    
+    // Add click handlers to new topic cards
+    const topicCards = topicsList.querySelectorAll('.topic-card');
+    if (topicCards) {
+        topicCards.forEach(card => {
+            card.addEventListener('click', () => {
+                selectedTopic = card.dataset.topicId;
+                topicCards.forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+            });
+        });
+    }
+}
+
 // Initialize all components
 document.addEventListener('DOMContentLoaded', function() {
     initializeMessageHandling();
     initializeDirectionControls();
     initializePersonas();
-    initializeScrolling();
     loadTopics();
 });
 
@@ -170,4 +310,18 @@ function initializeMessageHandling() {
     });
 }
 
-[Rest of the file remains unchanged...]
+// Load initial topics
+async function loadTopics() {
+    try {
+        const response = await fetch('/api/topics');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const topics = await response.json();
+        updateTopicsList(topics);
+    } catch (error) {
+        console.error('Error loading topics:', error);
+        const topicsList = document.getElementById('topics-list');
+        if (topicsList) {
+            topicsList.innerHTML = '<p class="text-danger">Failed to load topics. Please try again later.</p>';
+        }
+    }
+}
