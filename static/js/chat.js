@@ -8,11 +8,8 @@ let availablePersonas = [
     "Quantum Observer", "Existential Explorer", "Ethics Guardian"
 ];
 let currentPersonaIndex = 0;
-let touchStartX = 0;
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000;
 
-// Global function for sidebar toggle
+// Utility functions
 function toggleSidebar() {
     const sidebar = document.getElementById('chatSidebar');
     if (sidebar) {
@@ -20,12 +17,60 @@ function toggleSidebar() {
     }
 }
 
-// Async function for loading topics with retry mechanism
+function togglePersona(role, element) {
+    const allElements = document.querySelectorAll(`[data-role="${role}"]`);
+    
+    if (excludedPersonas.has(role)) {
+        excludedPersonas.delete(role);
+        allElements.forEach(el => {
+            el.classList.remove('excluded');
+            el.classList.add('active');
+        });
+    } else {
+        excludedPersonas.add(role);
+        allElements.forEach(el => {
+            el.classList.add('excluded');
+            el.classList.remove('active');
+        });
+    }
+    
+    // Visual feedback
+    element.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+        element.style.transform = '';
+    }, 200);
+}
+
+function getNextPersona() {
+    const activePersonas = availablePersonas.filter(p => !excludedPersonas.has(p));
+    if (activePersonas.length === 0) return availablePersonas[0];
+    currentPersonaIndex = (currentPersonaIndex + 1) % activePersonas.length;
+    
+    // Highlight active persona
+    document.querySelectorAll('.persona-card').forEach(card => {
+        card.classList.remove('active');
+        if (card.dataset.role === activePersonas[currentPersonaIndex]) {
+            card.classList.add('active');
+            card.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+    });
+    
+    return activePersonas[currentPersonaIndex];
+}
+
 async function loadTopics() {
     const topicsList = document.getElementById('topics-list');
-    const activeTopics = document.getElementById('active-topics');
-    
     if (!topicsList) return;
+    
+    // Show loading state
+    topicsList.innerHTML = `
+        <div class="loading-indicator text-center py-4">
+            <div class="spinner-border text-primary mb-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading topics...</p>
+        </div>
+    `;
     
     try {
         const response = await fetch('/api/topics', {
@@ -50,12 +95,87 @@ async function loadTopics() {
     }
 }
 
-// Main document ready function
+function updateTopicsList(topics) {
+    const topicsList = document.getElementById('topics-list');
+    const activeTopics = document.getElementById('active-topics');
+    
+    if (!topicsList) return;
+    
+    if (topics.length === 0) {
+        topicsList.innerHTML = `
+            <div class="placeholder-text text-center py-4">
+                <i class="bi bi-lightbulb fs-2 mb-3"></i>
+                <p>Start a conversation to receive personalized topic suggestions</p>
+            </div>
+        `;
+        return;
+    }
+    
+    topicsList.innerHTML = topics.map(topic => `
+        <button class="topic-button" data-topic-id="${topic.id}">
+            <h6 class="topic-title mb-1">${topic.title}</h6>
+            <span class="topic-category">${topic.category}</span>
+            <p class="topic-description mb-0">${topic.description}</p>
+        </button>
+    `).join('');
+    
+    // Add click handlers
+    document.querySelectorAll('[data-topic-id]').forEach(button => {
+        button.addEventListener('click', function() {
+            selectTopic(this.dataset.topicId, this);
+        });
+    });
+}
+
+function selectTopic(topicId, element) {
+    selectedTopic = topicId;
+    
+    // Update visual state
+    document.querySelectorAll('[data-topic-id]').forEach(el => {
+        el.classList.remove('active');
+        if (el.dataset.topicId === topicId) {
+            el.classList.add('active');
+        }
+    });
+    
+    if (!currentThread) {
+        const title = element.querySelector('.topic-title')?.textContent || 
+                     element.textContent;
+        messageInput.placeholder = `Start a conversation about: ${title}`;
+    }
+}
+
+async function suggestTopics(context) {
+    try {
+        const response = await fetch('/api/topics/suggest', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ context })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (data.status === "success") {
+            updateTopicsList(data.topics);
+        } else {
+            throw new Error(data.message || "Failed to suggest topics");
+        }
+    } catch (error) {
+        console.error('Error suggesting topics:', error);
+        appendSystemMessage('Unable to generate topic suggestions. The conversation will continue.');
+    }
+}
+
+// Initialize when the document is ready
 document.addEventListener('DOMContentLoaded', function() {
     const messageInput = document.getElementById('message-input');
     const sendButton = document.getElementById('send-message');
     const chatMessages = document.getElementById('chat-messages');
     
+    // Initialize components
     initializePersonas();
     initializeScrolling();
     loadTopics();
@@ -63,17 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function initializePersonas() {
         document.querySelectorAll('.persona-card').forEach(card => {
             card.addEventListener('click', function() {
-                const role = this.dataset.role;
-                togglePersona(role, this);
-            });
-            
-            // Add touch feedback
-            card.addEventListener('touchstart', () => {
-                card.style.transform = 'scale(0.95)';
-            });
-            
-            card.addEventListener('touchend', () => {
-                card.style.transform = '';
+                togglePersona(this.dataset.role, this);
             });
         });
     }
@@ -112,131 +222,15 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-    
-    function togglePersona(role, element) {
-        const allElements = document.querySelectorAll(`[data-role="${role}"]`);
-        
-        if (excludedPersonas.has(role)) {
-            excludedPersonas.delete(role);
-            allElements.forEach(el => {
-                el.classList.remove('excluded');
-                el.classList.add('active');
-            });
-        } else {
-            excludedPersonas.add(role);
-            allElements.forEach(el => {
-                el.classList.add('excluded');
-                el.classList.remove('active');
-            });
+
+    // Message handling
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendButton.click();
         }
-        
-        // Visual feedback
-        element.style.transform = 'scale(0.95)';
-        setTimeout(() => {
-            element.style.transform = '';
-        }, 200);
-    }
-    
-    function getNextPersona() {
-        const activePersonas = availablePersonas.filter(p => !excludedPersonas.has(p));
-        if (activePersonas.length === 0) return availablePersonas[0];
-        currentPersonaIndex = (currentPersonaIndex + 1) % activePersonas.length;
-        
-        // Highlight active persona
-        document.querySelectorAll('.persona-card').forEach(card => {
-            card.classList.remove('active');
-            if (card.dataset.role === activePersonas[currentPersonaIndex]) {
-                card.classList.add('active');
-                card.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-            }
-        });
-        
-        return activePersonas[currentPersonaIndex];
-    }
-    
-    function updateTopicsList(topics) {
-        const topicsList = document.getElementById('topics-list');
-        const activeTopics = document.getElementById('active-topics');
-        
-        if (topicsList) {
-            if (topics.length === 0) {
-                topicsList.innerHTML = `
-                    <div class="placeholder-text text-center py-4">
-                        <i class="bi bi-lightbulb fs-2 mb-3"></i>
-                        <p>Start a conversation to receive personalized topic suggestions</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            topicsList.innerHTML = topics.map(topic => `
-                <button class="topic-button" data-topic-id="${topic.id}">
-                    <h6 class="topic-title mb-1">${topic.title}</h6>
-                    <span class="topic-category">${topic.category}</span>
-                    <p class="topic-description mb-0">${topic.description}</p>
-                </button>
-            `).join('');
-        }
-        
-        if (activeTopics) {
-            activeTopics.innerHTML = topics.map(topic => `
-                <div class="topic-chip" data-topic-id="${topic.id}">
-                    ${topic.title}
-                </div>
-            `).join('');
-        }
-        
-        // Add click handlers
-        document.querySelectorAll('[data-topic-id]').forEach(button => {
-            button.addEventListener('click', function() {
-                selectTopic(this.dataset.topicId, this);
-            });
-        });
-    }
-    
-    function selectTopic(topicId, element) {
-        selectedTopic = topicId;
-        
-        // Update visual state
-        document.querySelectorAll('[data-topic-id]').forEach(el => {
-            el.classList.remove('active');
-            if (el.dataset.topicId === topicId) {
-                el.classList.add('active');
-            }
-        });
-        
-        if (!currentThread) {
-            const title = element.querySelector('.topic-title')?.textContent || 
-                         element.textContent;
-            messageInput.placeholder = `Start a conversation about: ${title}`;
-        }
-    }
-    
-    async function suggestTopics(context) {
-        try {
-            const response = await fetch('/api/topics/suggest', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ context })
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            if (data.status === "success") {
-                updateTopicsList(data.topics);
-            } else {
-                throw new Error(data.message || "Failed to suggest topics");
-            }
-        } catch (error) {
-            console.error('Error suggesting topics:', error);
-            appendSystemMessage('Unable to generate topic suggestions. The conversation will continue.');
-        }
-    }
-    
-    // Message handling functions
+    });
+
     sendButton.addEventListener('click', async function() {
         const message = messageInput.value.trim();
         if (!message) return;
@@ -249,69 +243,29 @@ document.addEventListener('DOMContentLoaded', function() {
             messageInput.value = '';
             
             const activeRole = getNextPersona();
+            const response = await fetch('/api/topics/suggest', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ context: message })
+            });
             
-            if (!currentThread) {
-                const response = await fetch('/api/start_dialogue', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        role: activeRole,
-                        context: message,
-                        topic_id: selectedTopic
-                    })
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                if (data.status === "success") {
-                    currentThread = data.thread_id;
-                    appendMessage(activeRole, data.response);
-                    suggestTopics(message);
-                } else {
-                    throw new Error(data.message || "Failed to start dialogue");
-                }
-            } else {
-                const response = await fetch('/api/continue_dialogue', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        thread_id: currentThread,
-                        role: activeRole,
-                        message: message
-                    })
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                if (data.status === "success") {
-                    appendMessage(activeRole, data.response);
-                } else {
-                    throw new Error(data.message || "Failed to continue dialogue");
-                }
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            
+            const data = await response.json();
+            if (data.status === "success") {
+                updateTopicsList(data.topics);
+            }
+            
+            appendMessage(activeRole, "Based on your message, I've suggested some related topics for our discussion. Feel free to explore them or continue our conversation.");
+            
         } catch (error) {
             console.error('Error:', error);
             appendSystemMessage(`An error occurred: ${error.message}. Please try again.`);
-            
-            if (!currentThread) {
-                currentThread = null;
-            }
         } finally {
             messageInput.disabled = false;
             sendButton.disabled = false;
-        }
-    });
-    
-    messageInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendButton.click();
         }
     });
     
