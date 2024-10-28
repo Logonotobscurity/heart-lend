@@ -10,7 +10,7 @@
         </div>
     </div>
 
-    <!-- Horizontal Persona Selector - Moved above chat area -->
+    <!-- Horizontal Persona Selector -->
     <div class="persona-selector mb-4">
         <div class="container-fluid">
             <h2 class="section-title mb-3">Choose Your AI Guides</h2>
@@ -18,6 +18,42 @@
             <div class="personas-scroll">
                 <div class="personas-row">
                     {% include "persona_cards.html" %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conversation Direction Controls -->
+    <div class="direction-controls mb-4">
+        <div class="container-fluid">
+            <h2 class="section-title mb-3">Guide the Conversation</h2>
+            <p class="guide-text mb-3">Set your preferences for how the dialogue should unfold.</p>
+            <div class="direction-options">
+                <div class="btn-group direction-buttons" role="group">
+                    <button type="button" class="btn btn-outline-secondary active" data-direction="balanced">
+                        <i class="bi bi-circle-half"></i>
+                        Balanced
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" data-direction="deep">
+                        <i class="bi bi-arrow-down-circle"></i>
+                        Deep Exploration
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" data-direction="broad">
+                        <i class="bi bi-arrows-angle-expand"></i>
+                        Broad Coverage
+                    </button>
+                </div>
+                <div class="focus-slider mt-4">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>Conversation Focus</span>
+                        <span class="focus-value">Balanced</span>
+                    </label>
+                    <input type="range" class="form-range" id="focusSlider" min="1" max="3" step="0.5" value="2">
+                    <div class="focus-labels d-flex justify-content-between">
+                        <small>Practical</small>
+                        <small>Balanced</small>
+                        <small>Philosophical</small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -49,20 +85,14 @@
                 <p class="guide-text">Topics are dynamically suggested based on your conversation. Click any topic to explore it further.</p>
             </div>
             <div id="topics-list" class="topics-list">
-                <!-- Loading State -->
-                <div class="loading-indicator text-center py-4">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading topics...</span>
-                    </div>
-                    <p class="mt-2">Loading suggested topics...</p>
-                </div>
+                <!-- Topics will be loaded here -->
             </div>
         </div>
     </div>
 
     <!-- Main Chat Area -->
     <div class="chat-main">
-        <!-- Active Topics with Clear Header -->
+        <!-- Active Topics -->
         <div class="active-topics-section">
             <div class="container-fluid">
                 <h3 class="h6 mb-2">Active Topics</h3>

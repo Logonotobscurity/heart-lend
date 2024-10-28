@@ -21,6 +21,10 @@ let currentPersonaIndex = 0;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 
+// Global variables for conversation direction
+let conversationDirection = 'balanced';
+let conversationFocus = 2;
+
 // Initialize message input and related functionality
 let messageInput;
 let sendButton;
@@ -41,8 +45,56 @@ document.addEventListener('DOMContentLoaded', function() {
     initializePersonas();
     initializeScrolling();
     initializeMessageHandling();
+    initializeDirectionControls();
     loadTopics();
 });
+
+function initializeDirectionControls() {
+    // Direction buttons
+    document.querySelectorAll('.direction-buttons .btn').forEach(button => {
+        button.addEventListener('click', function() {
+            document.querySelectorAll('.direction-buttons .btn').forEach(btn => 
+                btn.classList.remove('active'));
+            this.classList.add('active');
+            conversationDirection = this.dataset.direction;
+            updateConversationStyle();
+        });
+    });
+
+    // Focus slider
+    const focusSlider = document.getElementById('focusSlider');
+    const focusValue = document.querySelector('.focus-value');
+    
+    if (focusSlider && focusValue) {
+        focusSlider.addEventListener('input', function() {
+            conversationFocus = parseFloat(this.value);
+            let focusText = 'Balanced';
+            
+            if (conversationFocus < 1.5) focusText = 'Very Practical';
+            else if (conversationFocus < 2) focusText = 'Practical';
+            else if (conversationFocus < 2.5) focusText = 'Balanced';
+            else if (conversationFocus < 3) focusText = 'Philosophical';
+            else focusText = 'Deeply Philosophical';
+            
+            focusValue.textContent = focusText;
+            updateConversationStyle();
+        });
+    }
+}
+
+function updateConversationStyle() {
+    if (!currentThread) return;
+    
+    fetch('/api/update_conversation_style', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            thread_id: currentThread,
+            direction: conversationDirection,
+            focus: conversationFocus
+        })
+    }).catch(error => console.error('Error updating conversation style:', error));
+}
 
 function initializePersonas() {
     document.querySelectorAll('.persona-card').forEach(card => {
@@ -304,7 +356,9 @@ async function handleMessageSend() {
                 body: JSON.stringify({
                     role: activeRole,
                     context: message,
-                    topic_id: selectedTopic
+                    topic_id: selectedTopic,
+                    direction: conversationDirection,
+                    focus: conversationFocus
                 })
             });
             
@@ -327,7 +381,9 @@ async function handleMessageSend() {
                 body: JSON.stringify({
                     thread_id: currentThread,
                     role: activeRole,
-                    message: message
+                    message: message,
+                    direction: conversationDirection,
+                    focus: conversationFocus
                 })
             });
             

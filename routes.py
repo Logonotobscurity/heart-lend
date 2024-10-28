@@ -45,7 +45,6 @@ def init_routes(app):
             if not data or 'context' not in data:
                 return jsonify({"error": "Context is required"}), 400
 
-            # Enhanced topics based on document and AI guides
             topics = [
                 {
                     "id": 1, 
@@ -83,10 +82,112 @@ def init_routes(app):
             logger.error(f"Error suggesting topics: {str(e)}")
             return jsonify({"error": str(e)}), 500
 
+    @app.route('/api/update_conversation_style', methods=['POST'])
+    def update_conversation_style():
+        try:
+            data = request.get_json()
+            if not data or 'thread_id' not in data:
+                return jsonify({"error": "Thread ID is required"}), 400
+
+            thread = ChatThread.query.filter_by(thread_id=data['thread_id']).first()
+            if not thread:
+                return jsonify({"error": "Thread not found"}), 404
+
+            thread.metadata = {
+                'direction': data.get('direction', 'balanced'),
+                'focus': data.get('focus', 2)
+            }
+            db.session.commit()
+
+            return jsonify({"status": "success"})
+        except Exception as e:
+            logger.error(f"Error updating conversation style: {str(e)}")
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/start_dialogue', methods=['POST'])
+    def start_dialogue():
+        try:
+            data = request.get_json()
+            thread_id = str(uuid.uuid4())
+            
+            thread = ChatThread(
+                thread_id=thread_id,
+                context=data.get('context'),
+                topic_id=data.get('topic_id'),
+                metadata={
+                    'direction': data.get('direction', 'balanced'),
+                    'focus': data.get('focus', 2)
+                }
+            )
+            db.session.add(thread)
+            
+            response = dialogue_system.generate_response(
+                data['role'],
+                data['context'],
+                conversation_style={
+                    'direction': data.get('direction', 'balanced'),
+                    'focus': data.get('focus', 2)
+                }
+            )
+            
+            message = Message(
+                thread_id=thread.id,
+                role=data['role'],
+                content=response
+            )
+            db.session.add(message)
+            db.session.commit()
+            
+            return jsonify({
+                "status": "success",
+                "thread_id": thread_id,
+                "response": response
+            })
+        except Exception as e:
+            logger.error(f"Error starting dialogue: {str(e)}")
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/continue_dialogue', methods=['POST'])
+    def continue_dialogue():
+        try:
+            data = request.get_json()
+            thread = ChatThread.query.filter_by(thread_id=data['thread_id']).first()
+            
+            if not thread:
+                return jsonify({"error": "Thread not found"}), 404
+            
+            if 'direction' in data or 'focus' in data:
+                thread.metadata = {
+                    'direction': data.get('direction', thread.metadata.get('direction', 'balanced')),
+                    'focus': data.get('focus', thread.metadata.get('focus', 2))
+                }
+            
+            response = dialogue_system.generate_layered_response(
+                thread.id,
+                data['role'],
+                data['message'],
+                conversation_style=thread.metadata
+            )
+            
+            message = Message(
+                thread_id=thread.id,
+                role=data['role'],
+                content=response
+            )
+            db.session.add(message)
+            db.session.commit()
+            
+            return jsonify({
+                "status": "success",
+                "response": response
+            })
+        except Exception as e:
+            logger.error(f"Error continuing dialogue: {str(e)}")
+            return jsonify({"error": str(e)}), 500
+
     @app.route('/visualization/<thread_id>')
     def show_visualization(thread_id):
         try:
-            # Verify thread exists
             thread = ChatThread.query.filter_by(thread_id=thread_id).first()
             if not thread:
                 return render_template('error.html', message="Thread not found"), 404
@@ -99,7 +200,6 @@ def init_routes(app):
     @app.route('/api/visualization/<thread_id>')
     def get_visualization_data(thread_id):
         try:
-            # Find thread by thread_id
             thread = ChatThread.query.filter_by(thread_id=thread_id).first()
             if not thread:
                 return jsonify({"error": "Thread not found"}), 404
@@ -111,7 +211,6 @@ def init_routes(app):
             logger.error(f"Visualization error: {str(e)}")
             return jsonify({"error": str(e)}), 500
 
-    # Error handlers
     @app.errorhandler(404)
     def not_found_error(error):
         return jsonify({"error": "Resource not found"}), 404
@@ -120,3 +219,5 @@ def init_routes(app):
     def internal_error(error):
         db.session.rollback()
         return jsonify({"error": "Internal server error"}), 500
+
+    return app
