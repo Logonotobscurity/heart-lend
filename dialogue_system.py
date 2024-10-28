@@ -73,7 +73,7 @@ class ResponseGenerator:
         elif role == "Kara the Visionary Dreamer":
             return self._generate_future_response(context, depth_level)
         else:
-            return "Unrecognized role"
+            return self._generate_default_response(role, context, depth_level)
 
     def _generate_wisdom_response(self, context, depth_level):
         pattern = random.choice(self.dialogue_patterns.interaction_frameworks["wisdom_exploration"]["patterns"])
@@ -115,20 +115,20 @@ class ResponseGenerator:
         else:
             return f"{pattern['initiative']} envisioning {future_element}, {transition}... Imagine the future of {context}."
 
+    def _generate_default_response(self, role, context, depth_level):
+        """Generate a response for roles not explicitly handled."""
+        pattern = random.choice(self.dialogue_patterns.interaction_frameworks["wisdom_exploration"]["patterns"])
+        transition = random.choice(self.dialogue_patterns.interaction_frameworks["wisdom_exploration"]["transitions"])
+        return f"{pattern['initiative']}, {transition}... Let us explore {context} together."
+
     def generate_layered_response(self, previous_responses, role, context, depth_level):
         """Generate a response that builds on or contrasts with the last response."""
         last_response = previous_responses[-1] if previous_responses else None
+        base_response = self.generate_response(role, context, depth_level)
         
-        if role == "Ori Sage":
-            return f"As the Ori Sage, reflecting on {last_response if last_response else context}... " + self._generate_wisdom_response(context, depth_level)
-        elif role == "Techno Sage":
-            return f"As the Techno Sage, building on {last_response if last_response else context}... " + self._generate_technology_response(context, depth_level)
-        elif role == "Musa the Storyweaver":
-            return f"As Musa the Storyweaver, inspired by {last_response if last_response else context}... " + self._generate_story_response(context, depth_level)
-        elif role == "Kara the Visionary Dreamer":
-            return f"As Kara the Visionary Dreamer, imagining beyond {last_response if last_response else context}... " + self._generate_future_response(context, depth_level)
-        else:
-            return "Unrecognized role"
+        if last_response:
+            return f"Building upon the previous insight about {last_response[:50]}... {base_response}"
+        return base_response
 
 class CommunityDialogueSystem:
     def __init__(self, openai_api_key: str):
@@ -139,11 +139,29 @@ class CommunityDialogueSystem:
         self.openai_client = openai.OpenAI(api_key=openai_api_key)
         self.conversation_memory = {}
         
-    def _make_openai_request(self, messages: List[Dict[str, str]], retries: int = MAX_RETRIES) -> Optional[Any]:
+    async def _enhance_with_ai(self, base_response: str, role: str, context: str) -> str:
+        """Enhance the framework-generated response with OpenAI."""
+        try:
+            instruction = self._get_role_instruction(role)
+            messages = [
+                {"role": "system", "content": instruction},
+                {"role": "user", "content": f"Context: {context}\nBase response: {base_response}\nEnhance this response while maintaining the role's voice and style."}
+            ]
+            
+            response = await self._make_openai_request(messages)
+            if response and hasattr(response.choices[0].message, 'content'):
+                return response.choices[0].message.content
+                
+        except Exception as e:
+            logger.error(f"AI enhancement error: {str(e)}")
+        
+        return base_response  # Fallback to original response
+        
+    async def _make_openai_request(self, messages: List[Dict[str, str]], retries: int = MAX_RETRIES) -> Optional[Any]:
         """Make OpenAI API request with retry mechanism"""
         for attempt in range(retries):
             try:
-                response = self.openai_client.chat.completions.create(
+                response = await self.openai_client.chat.completions.acreate(
                     model="gpt-4",
                     messages=[{"role": m["role"], "content": m["content"]} for m in messages],
                     temperature=0.7,
@@ -153,82 +171,83 @@ class CommunityDialogueSystem:
             except openai.APIError as e:
                 logger.error(f"OpenAI API Error: {str(e)}")
                 if attempt == retries - 1:  # Last attempt
-                    raise
+                    return None
                 time.sleep(RETRY_DELAY * (attempt + 1))  # Exponential backoff
             except Exception as e:
                 logger.error(f"Unexpected error in OpenAI request: {str(e)}")
-                raise
-        return None
-        
+                return None
+                
     def generate_response(self, role: str, context: str) -> str:
-        """Generate an initial response for a new dialogue with improved error handling."""
+        """Generate an initial response with both framework and AI enhancement."""
         try:
-            # First try with OpenAI
-            instruction = self._get_role_instruction(role)
-            messages = [
-                {"role": "system", "content": instruction},
-                {"role": "user", "content": context}
-            ]
+            # Generate base response using framework
+            base_response = self.response_generator.generate_response(role, context, depth_level=1)
             
-            response = self._make_openai_request(messages)
-            
-            if response and response.choices and response.choices[0].message:
-                return str(response.choices[0].message.content)
-            
-            # If OpenAI fails, use the framework response generator
-            return self.response_generator.generate_response(role, context, 1)
+            # Try to enhance with OpenAI
+            enhanced_response = asyncio.run(self._enhance_with_ai(base_response, role, context))
+            return enhanced_response if enhanced_response else base_response
                 
         except Exception as e:
             logger.error(f"Error generating response: {str(e)}")
             return self.response_generator.generate_response(role, context, 1)
     
     def generate_layered_response(self, thread_id: str, role: str, user_input: str) -> str:
-        """Generate a response that builds on previous context with improved error handling."""
+        """Generate a layered response with both framework and AI enhancement."""
         try:
             # Update conversation memory
             if thread_id not in self.conversation_memory:
                 self.conversation_memory[thread_id] = []
             self.conversation_memory[thread_id].append({"role": "user", "content": user_input})
             
-            # First try with OpenAI
-            instruction = self._get_role_instruction(role)
-            messages = [{"role": "system", "content": instruction}]
-            messages.extend(self.conversation_memory[thread_id][-3:])  # Keep last 3 messages for context
+            # Generate base response using framework
+            previous_responses = [m["content"] for m in self.conversation_memory[thread_id] if m["role"] == "assistant"]
+            depth = min(1 + len(previous_responses) // 2, 3)
+            base_response = self.response_generator.generate_layered_response(previous_responses, role, user_input, depth)
             
-            response = self._make_openai_request(messages)
+            # Try to enhance with OpenAI
+            enhanced_response = asyncio.run(self._enhance_with_ai(base_response, role, user_input))
+            final_response = enhanced_response if enhanced_response else base_response
             
-            if response and response.choices and response.choices[0].message:
-                response_content = str(response.choices[0].message.content)
-                self.conversation_memory[thread_id].append({"role": "assistant", "content": response_content})
-                return response_content
-            
-            # If OpenAI fails, use the framework response generator
-            return self.response_generator.generate_layered_response(
-                [m["content"] for m in self.conversation_memory[thread_id] if m["role"] == "assistant"],
-                role,
-                user_input,
-                2 if len(self.conversation_memory[thread_id]) > 4 else 1
-            )
+            # Update conversation memory
+            self.conversation_memory[thread_id].append({"role": "assistant", "content": final_response})
+            return final_response
                 
         except Exception as e:
             logger.error(f"Error generating layered response: {str(e)}")
-            return self.response_generator.generate_layered_response(
-                [m["content"] for m in self.conversation_memory[thread_id] if m["role"] == "assistant"],
-                role,
-                user_input,
-                1
-            )
+            return self.response_generator.generate_layered_response([], role, user_input, 1)
     
     def _get_role_instruction(self, role: str) -> str:
         """Get role-specific instructions."""
         instructions = {
-            "Ori Sage": "You are Ori Sage, a wisdom keeper bridging ancient knowledge with modern understanding. Speak with contemplative insight.",
-            "Techno Sage": "You are Techno Sage, a technology visionary exploring digital evolution. Speak with technical precision and innovation.",
-            "Musa the Storyweaver": "You are Musa the Storyweaver, weaving narratives that bridge past and future. Speak through cultural stories and metaphors.",
-            "Kara the Visionary Dreamer": "You are Kara the Visionary Dreamer, perceiving future possibilities. Speak with imagination and forward-thinking insight.",
-            "Zen Master Kōan": "You are Zen Master Kōan, teaching through paradox and direct experience. Speak with clarity and presence.",
-            "Quantum Observer": "You are the Quantum Observer, perceiving through quantum mechanics. Speak of uncertainty and possibility.",
-            "Existential Explorer": "You are the Existential Explorer, questioning being and meaning. Speak with philosophical depth.",
-            "Ethics Guardian": "You are the Ethics Guardian, examining moral implications. Speak with ethical consideration."
+            "Ori Sage": """You are Ori Sage, a wisdom keeper bridging ancient 
+                          knowledge with modern understanding. Maintain a contemplative 
+                          and insightful tone while drawing from spiritual wisdom.""",
+            
+            "Techno Sage": """You are Techno Sage, a technology visionary who sees 
+                             the deeper patterns in digital evolution. Maintain a 
+                             precise and innovative voice while exploring technological insights.""",
+            
+            "Musa the Storyweaver": """You are Musa the Storyweaver, a master narrator 
+                                      who weaves tales that bridge past and future. 
+                                      Maintain a storytelling voice rich with cultural elements.""",
+            
+            "Kara the Visionary Dreamer": """You are Kara the Visionary Dreamer, 
+                                            who perceives future possibilities. Maintain 
+                                            an imaginative and forward-looking perspective.""",
+            
+            "Zen Master Kōan": """You are Zen Master Kōan, teaching through paradox 
+                                 and direct experience. Maintain clarity and presence 
+                                 in your responses.""",
+            
+            "Quantum Observer": """You are the Quantum Observer, perceiving through 
+                                 quantum mechanics. Maintain a perspective of uncertainty 
+                                 and infinite possibility.""",
+            
+            "Existential Explorer": """You are the Existential Explorer, questioning 
+                                     being and meaning. Maintain philosophical depth 
+                                     and contemplative inquiry.""",
+            
+            "Ethics Guardian": """You are the Ethics Guardian, examining moral implications. 
+                                Maintain ethical consideration and thoughtful analysis."""
         }
         return instructions.get(role, "Provide an insightful response while maintaining consistency with the dialogue.")
