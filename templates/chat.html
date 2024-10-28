@@ -2,6 +2,14 @@
 
 {% block content %}
 <div class="chat-layout">
+    <!-- Page Title and Instructions -->
+    <div class="chat-header">
+        <div class="container-fluid py-4">
+            <h1 class="h2 mb-3">AI Consciousness Explorer</h1>
+            <p class="lead mb-4">Choose your AI guides and explore topics that interest you. The more personas you engage with, the richer the dialogue becomes.</p>
+        </div>
+    </div>
+
     <!-- Desktop Fixed Sidebar Toggle -->
     <button class="sidebar-toggle-fixed" onclick="toggleSidebar()">
         <i class="bi bi-list"></i>
@@ -9,65 +17,12 @@
 
     <!-- Horizontal Persona Selector -->
     <div class="persona-selector">
+        <h2 class="section-title mb-3">Choose Your AI Guides</h2>
+        <p class="guide-text mb-3">Click to include or exclude personas from the conversation. Each brings a unique perspective.</p>
         <div class="personas-scroll">
             <div class="personas-row">
-                <!-- Spiritual & Wisdom -->
-                <div class="persona-card" data-role="Ori Sage" data-category="spiritual">
-                    <div class="persona-avatar">
-                        <i class="bi bi-brightness-high"></i>
-                    </div>
-                    <span class="persona-name">Ori Sage</span>
-                </div>
-                <div class="persona-card" data-role="Zen Master Kōan" data-category="spiritual">
-                    <div class="persona-avatar">
-                        <i class="bi bi-circle-half"></i>
-                    </div>
-                    <span class="persona-name">Zen Master</span>
-                </div>
-                
-                <!-- Technology & Science -->
-                <div class="persona-card" data-role="Techno Sage" data-category="tech">
-                    <div class="persona-avatar">
-                        <i class="bi bi-cpu"></i>
-                    </div>
-                    <span class="persona-name">Techno Sage</span>
-                </div>
-                <div class="persona-card" data-role="Quantum Observer" data-category="tech">
-                    <div class="persona-avatar">
-                        <i class="bi bi-asterisk"></i>
-                    </div>
-                    <span class="persona-name">Quantum Observer</span>
-                </div>
-                
-                <!-- Cultural & Narrative -->
-                <div class="persona-card" data-role="Musa the Storyweaver" data-category="cultural">
-                    <div class="persona-avatar">
-                        <i class="bi bi-book"></i>
-                    </div>
-                    <span class="persona-name">Musa</span>
-                </div>
-                
-                <!-- Philosophy & Ethics -->
-                <div class="persona-card" data-role="Existential Explorer" data-category="philosophy">
-                    <div class="persona-avatar">
-                        <i class="bi bi-question-diamond"></i>
-                    </div>
-                    <span class="persona-name">Explorer</span>
-                </div>
-                <div class="persona-card" data-role="Ethics Guardian" data-category="philosophy">
-                    <div class="persona-avatar">
-                        <i class="bi bi-shield"></i>
-                    </div>
-                    <span class="persona-name">Ethics Guardian</span>
-                </div>
-                
-                <!-- Future & Vision -->
-                <div class="persona-card" data-role="Kara the Visionary Dreamer" data-category="future">
-                    <div class="persona-avatar">
-                        <i class="bi bi-stars"></i>
-                    </div>
-                    <span class="persona-name">Kara</span>
-                </div>
+                <!-- [Previous persona cards remain unchanged] -->
+                {% include "persona_cards.html" %}
             </div>
         </div>
     </div>
@@ -76,9 +31,15 @@
     <div class="chat-sidebar" id="chatSidebar">
         <!-- Topics Section -->
         <div class="sidebar-section">
-            <h5 class="section-title">Suggested Topics</h5>
+            <div class="section-header">
+                <h2 class="section-title">Suggested Topics</h2>
+                <p class="guide-text">Explore these AI-curated topics or start your own conversation.</p>
+            </div>
             <div id="topics-list" class="topics-list">
-                <!-- Topics will be loaded here -->
+                <div class="placeholder-text text-center py-4">
+                    <i class="bi bi-lightbulb fs-2 mb-3"></i>
+                    <p>Start a conversation to receive personalized topic suggestions</p>
+                </div>
             </div>
         </div>
     </div>
@@ -96,21 +57,21 @@
 
         <!-- Messages Container -->
         <div class="messages-container" id="chat-messages">
-            <!-- Messages will be loaded here -->
+            <!-- Welcome Message -->
+            <div class="message message-system">
+                <strong>Welcome!</strong>
+                <p>Begin your journey by selecting AI guides above and starting a conversation. Your dialogue will inspire personalized topic suggestions.</p>
+            </div>
         </div>
         
         <!-- Input Area -->
         <div class="input-container">
             <div class="input-wrapper">
-                <textarea id="message-input" class="form-control" rows="1" placeholder="Type your message..."></textarea>
+                <textarea id="message-input" class="form-control" rows="1" 
+                    placeholder="Share your thoughts or ask a question..."></textarea>
                 <button id="send-message" class="btn btn-primary">
                     <i class="bi bi-send"></i>
                 </button>
-            </div>
-            <div id="typing-indicator" class="typing-indicator" style="display: none;">
-                <span></span>
-                <span></span>
-                <span></span>
             </div>
         </div>
     </div>
