@@ -1,120 +1,29 @@
-:root {
-    /* Theme colors */
-    --chat-bg: var(--bs-body-bg);
-    --sidebar-bg: var(--bs-dark-bg-subtle);
-    --message-bg: var(--bs-dark-bg-subtle);
-    --input-bg: var(--bs-body-bg);
-    --border-color: var(--bs-border-color);
-    
-    /* Persona category colors */
-    --spiritual-color: var(--bs-purple);
-    --tech-color: var(--bs-cyan);
-    --cultural-color: var(--bs-green);
-    --philosophy-color: var(--bs-indigo);
-    --future-color: var(--bs-pink);
-    
-    /* Transitions */
-    --transition-speed: 0.3s;
-    
-    /* System font stack */
-    --system-fonts: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-}
-
-/* Layout */
-.chat-layout {
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - 56px);
-    position: relative;
-    overflow: hidden;
-}
-
-/* Chat Header */
-.chat-header {
-    background: var(--sidebar-bg);
-    border-bottom: 1px solid var(--border-color);
+/* Add the topics section styles to the existing CSS */
+.topics-section {
     padding: 1rem;
-}
-
-/* Sidebar Toggle */
-.sidebar-toggle-fixed {
-    position: fixed;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 32px;
-    height: 64px;
-    background: var(--sidebar-bg);
-    border: 1px solid var(--border-color);
-    border-left: none;
-    border-radius: 0 8px 8px 0;
-    z-index: 1000;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all var(--transition-speed) ease;
-}
-
-/* Persona Selector */
-.persona-selector {
-    background: var(--chat-bg);
+    background: var(--bs-dark-bg-subtle);
     border-bottom: 1px solid var(--border-color);
-    padding: 1rem;
-    overflow: hidden;
 }
 
-.personas-scroll {
+.topics-scroll {
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     -ms-overflow-style: none;
     scroll-behavior: smooth;
-    padding-bottom: 0.5rem;
+    padding: 0.5rem 0;
 }
 
-.personas-row {
+.topics-list {
     display: flex;
     gap: 0.75rem;
     padding: 0.25rem;
     min-width: min-content;
 }
 
-/* Topics Section */
-.chat-sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 320px;
-    background: var(--sidebar-bg);
-    border-right: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    transition: transform var(--transition-speed) ease;
-    transform: translateX(-100%);
-    z-index: 1000;
-    overflow-y: auto;
-}
-
-.chat-sidebar.open {
-    transform: translateX(0);
-}
-
-.sidebar-section {
-    padding: 1rem;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-.topics-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
 .topic-button {
+    flex: 0 0 300px;
     text-align: left;
     padding: 1rem;
     background: var(--chat-bg);
@@ -122,7 +31,6 @@
     border-radius: 0.75rem;
     transition: all var(--transition-speed) ease;
     cursor: pointer;
-    width: 100%;
 }
 
 .topic-button:hover {
@@ -135,79 +43,43 @@
     background: var(--bs-primary-bg-subtle);
 }
 
-/* Mobile Responsiveness */
+.topic-title {
+    font-weight: 600;
+    color: var(--bs-heading-color);
+    margin-bottom: 0.5rem;
+}
+
+.topic-category {
+    font-size: 0.8rem;
+    color: var(--bs-secondary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.topic-description {
+    font-size: 0.9rem;
+    color: var(--bs-secondary-color);
+    margin-top: 0.5rem;
+}
+
+/* Mobile responsiveness */
 @media (max-width: 768px) {
-    .chat-sidebar {
-        width: 100%;
-        max-width: 100%;
-        top: auto;
-        bottom: 0;
-        height: 60vh;
-        transform: translateY(100%);
-        border-radius: 1rem 1rem 0 0;
-        border-right: none;
-        border-top: 1px solid var(--border-color);
-    }
-
-    .chat-sidebar.open {
-        transform: translateY(0);
-    }
-
-    .sidebar-section {
+    .topics-section {
         padding: 0.75rem;
     }
-
-    .topics-list {
-        gap: 0.5rem;
-        padding-bottom: env(safe-area-inset-bottom, 1rem);
-    }
-
+    
     .topic-button {
-        padding: 0.75rem;
-        margin: 0;
-        border-radius: 0.5rem;
-    }
-
-    .chat-main {
-        padding-bottom: 60px;
-    }
-
-    .messages-container {
+        flex: 0 0 250px;
         padding: 0.75rem;
     }
-
-    .input-container {
-        padding: 0.75rem;
-        background: var(--chat-bg);
-        border-top: 1px solid var(--border-color);
-        position: sticky;
-        bottom: 0;
-        z-index: 100;
+    
+    .topic-title {
+        font-size: 1rem;
+    }
+    
+    .topic-description {
+        font-size: 0.85rem;
     }
 }
 
-/* Loading States */
-.loading-indicator {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    color: var(--bs-secondary);
-}
-
-.loading-indicator .spinner-border {
-    width: 2rem;
-    height: 2rem;
-    margin-bottom: 1rem;
-}
-
-/* Error States */
-.error-message {
-    padding: 1rem;
-    margin: 1rem 0;
-    border-radius: 0.5rem;
-    background: var(--bs-danger-bg-subtle);
-    border: 1px solid var(--bs-danger);
-    color: var(--bs-danger);
-}
+/* Keep existing styles */

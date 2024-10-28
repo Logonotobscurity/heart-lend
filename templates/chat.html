@@ -21,36 +21,25 @@
         <p class="guide-text mb-3">Click to include or exclude personas from the conversation. Each brings a unique perspective.</p>
         <div class="personas-scroll">
             <div class="personas-row">
-                <!-- [Previous persona cards remain unchanged] -->
                 {% include "persona_cards.html" %}
-            </div>
-        </div>
-    </div>
-
-    <!-- Desktop Sidebar -->
-    <div class="chat-sidebar" id="chatSidebar">
-        <!-- Topics Section -->
-        <div class="sidebar-section">
-            <div class="section-header">
-                <h2 class="section-title">Suggested Topics</h2>
-                <p class="guide-text">Explore these AI-curated topics or start your own conversation.</p>
-            </div>
-            <div id="topics-list" class="topics-list">
-                <div class="placeholder-text text-center py-4">
-                    <i class="bi bi-lightbulb fs-2 mb-3"></i>
-                    <p>Start a conversation to receive personalized topic suggestions</p>
-                </div>
             </div>
         </div>
     </div>
 
     <!-- Main Chat Area -->
     <div class="chat-main">
-        <!-- Active Topics -->
-        <div class="active-topics">
+        <!-- Topics Section -->
+        <div class="topics-section">
+            <div class="section-header">
+                <h2 class="section-title">Suggested Topics</h2>
+                <p class="guide-text">Explore these AI-curated topics or start your own conversation.</p>
+            </div>
             <div class="topics-scroll">
-                <div class="topics-row" id="active-topics">
-                    <!-- Active topics will be added here -->
+                <div id="topics-list" class="topics-list">
+                    <div class="placeholder-text text-center py-4">
+                        <i class="bi bi-lightbulb fs-2 mb-3"></i>
+                        <p>Start a conversation to receive personalized topic suggestions</p>
+                    </div>
                 </div>
             </div>
         </div>

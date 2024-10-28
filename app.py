@@ -1,9 +1,11 @@
 import os
+import uuid
 from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import openai
 import logging
 import jinja2
+from dialogue_system import CommunityDialogueSystem
 
 # Configure logging
 logging.basicConfig(
@@ -39,6 +41,56 @@ def chat():
         logger.error(f"Unexpected error in chat route: {str(e)}")
         return render_template('error.html', 
             error="An unexpected error occurred. Please try again later."), 500
+
+@app.route('/api/start_dialogue', methods=['POST'])
+def start_dialogue():
+    try:
+        from models import ChatThread, Message
+        
+        role = request.json.get('role')
+        topic_id = request.json.get('topic_id')
+        context = request.json.get('context')
+        
+        if not role or not context:
+            return jsonify({
+                "status": "error",
+                "message": "Role and context are required"
+            }), 400
+        
+        # Create new chat thread
+        thread = ChatThread(
+            thread_id=str(uuid.uuid4()),
+            context=context,
+            topic_id=topic_id
+        )
+        db.session.add(thread)
+        db.session.commit()
+        
+        # Generate initial response
+        dialogue_system = CommunityDialogueSystem(os.environ.get('OPENAI_API_KEY'))
+        response = dialogue_system.generate_response(role, context)
+        
+        # Save message
+        message = Message(
+            thread_id=thread.id,
+            role=role,
+            content=response
+        )
+        db.session.add(message)
+        db.session.commit()
+        
+        return jsonify({
+            "status": "success",
+            "thread_id": thread.thread_id,
+            "response": response
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in start_dialogue: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 @app.route('/api/topics', methods=['GET'])
 def get_topics():
