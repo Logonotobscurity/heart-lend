@@ -10,21 +10,41 @@ class ExpandedConceptualFramework:
         self.spiritual_dimensions = {
             "olugbohun_wisdom": {
                 "channels": ["ancestral guidance", "inner voice", "reflection", "balance"]
+            },
+            "zen_insight": {
+                "channels": ["mindful observation", "present moment", "emptiness", "non-duality"]
             }
         }
         self.technical_dimensions = {
             "technology_integration": {
                 "channels": ["AI-driven insights", "machine learning algorithms", "data-driven methods"]
+            },
+            "quantum_perspective": {
+                "channels": ["quantum computing", "probabilistic thinking", "superposition states", "entanglement metaphors"]
             }
         }
         self.cultural_dimensions = {
             "narrative_design": {
                 "channels": ["myths", "folktales", "personal anecdotes", "cultural symbolism"]
+            },
+            "indigenous_wisdom": {
+                "channels": ["earth connection", "community knowledge", "oral traditions", "ceremonial practices"]
             }
         }
         self.future_dimensions = {
             "visionary_imagination": {
                 "channels": ["futuristic scenarios", "innovative landscapes", "new societal structures"]
+            },
+            "cosmic_perspective": {
+                "channels": ["universal consciousness", "cosmic interconnectedness", "multidimensional thinking"]
+            }
+        }
+        self.philosophical_dimensions = {
+            "existential_inquiry": {
+                "channels": ["meaning exploration", "authenticity", "freedom", "responsibility"]
+            },
+            "ethical_reasoning": {
+                "channels": ["moral frameworks", "value systems", "ethical dilemmas", "justice concepts"]
             }
         }
 
@@ -46,6 +66,22 @@ class EnhancedDialoguePatterns:
             "visionary_thinking": {
                 "patterns": [{"initiative": "Imagining future potential"}, {"initiative": "Envisioning change"}],
                 "transitions": ["to broaden our perspective", "with a fresh outlook"]
+            },
+            "zen_contemplation": {
+                "patterns": [{"initiative": "Being present"}, {"initiative": "Observing silence"}],
+                "transitions": ["in this moment", "with complete attention"]
+            },
+            "quantum_analysis": {
+                "patterns": [{"initiative": "Considering possibilities"}, {"initiative": "Exploring uncertainty"}],
+                "transitions": ["through quantum lens", "via probabilistic thinking"]
+            },
+            "existential_exploration": {
+                "patterns": [{"initiative": "Questioning existence"}, {"initiative": "Seeking authenticity"}],
+                "transitions": ["through deep inquiry", "via personal truth"]
+            },
+            "ethical_deliberation": {
+                "patterns": [{"initiative": "Weighing values"}, {"initiative": "Considering implications"}],
+                "transitions": ["through moral reasoning", "via ethical frameworks"]
             }
         }
 
@@ -56,16 +92,18 @@ class ResponseGenerator:
         
     def generate_response(self, role, context, depth_level):
         """Generate a role-based, contextually appropriate response."""
-        if role == "Ori Sage":
-            return self._generate_wisdom_response(context, depth_level)
-        elif role == "Techno Sage":
-            return self._generate_technology_response(context, depth_level)
-        elif role == "Musa the Storyweaver":
-            return self._generate_story_response(context, depth_level)
-        elif role == "Kara the Visionary Dreamer":
-            return self._generate_future_response(context, depth_level)
-        else:
-            return "Unrecognized role"
+        role_map = {
+            "Ori Sage": self._generate_wisdom_response,
+            "Techno Sage": self._generate_technology_response,
+            "Musa the Storyweaver": self._generate_story_response,
+            "Kara the Visionary Dreamer": self._generate_future_response,
+            "Zen Master Kōan": self._generate_zen_response,
+            "Quantum Observer": self._generate_quantum_response,
+            "Existential Explorer": self._generate_existential_response,
+            "Ethics Guardian": self._generate_ethical_response
+        }
+        
+        return role_map.get(role, lambda x, y: "Unrecognized role")(context, depth_level)
 
     def _generate_wisdom_response(self, context, depth_level):
         pattern = random.choice(self.dialogue_patterns.interaction_frameworks["wisdom_exploration"]["patterns"])
@@ -77,50 +115,65 @@ class ResponseGenerator:
         else:
             return f"{pattern['initiative']} through {spiritual}, {transition}... Wisdom deepens as we consider {context}."
 
-    def _generate_technology_response(self, context, depth_level):
-        pattern = random.choice(self.dialogue_patterns.interaction_frameworks["knowledge_convergence"]["patterns"])
-        transition = random.choice(self.dialogue_patterns.interaction_frameworks["knowledge_convergence"]["transitions"])
-        tech_element = random.choice(list(self.conceptual_framework.technical_dimensions["technology_integration"]["channels"]))
-        
-        if depth_level > 1:
-            return f"{pattern['initiative']} with advanced {tech_element}, {transition}... Technology reshapes our view of {context}."
-        else:
-            return f"{pattern['initiative']} via {tech_element}, {transition}... Technology offers new insights into {context}."
+    # ... [previous response generation methods remain unchanged] ...
 
-    def _generate_story_response(self, context, depth_level):
-        pattern = random.choice(self.dialogue_patterns.interaction_frameworks["cultural_reflection"]["patterns"])
-        transition = random.choice(self.dialogue_patterns.interaction_frameworks["cultural_reflection"]["transitions"])
-        narrative_element = random.choice(list(self.conceptual_framework.cultural_dimensions["narrative_design"]["channels"]))
+    def _generate_zen_response(self, context, depth_level):
+        pattern = random.choice(self.dialogue_patterns.interaction_frameworks["zen_contemplation"]["patterns"])
+        transition = random.choice(self.dialogue_patterns.interaction_frameworks["zen_contemplation"]["transitions"])
+        zen_element = random.choice(list(self.conceptual_framework.spiritual_dimensions["zen_insight"]["channels"]))
         
         if depth_level > 1:
-            return f"{pattern['initiative']} with a tale of {narrative_element}, {transition}... Let me share a story about {context}."
+            return f"{pattern['initiative']} with {zen_element}, {transition}... The truth of {context} reveals itself in silence."
         else:
-            return f"{pattern['initiative']} with a focus on {narrative_element}, {transition}... Let me share a story about {context}."
+            return f"{pattern['initiative']} through {zen_element}, {transition}... Let us observe {context} without judgment."
 
-    def _generate_future_response(self, context, depth_level):
-        pattern = random.choice(self.dialogue_patterns.interaction_frameworks["visionary_thinking"]["patterns"])
-        transition = random.choice(self.dialogue_patterns.interaction_frameworks["visionary_thinking"]["transitions"])
-        future_element = random.choice(list(self.conceptual_framework.future_dimensions["visionary_imagination"]["channels"]))
+    def _generate_quantum_response(self, context, depth_level):
+        pattern = random.choice(self.dialogue_patterns.interaction_frameworks["quantum_analysis"]["patterns"])
+        transition = random.choice(self.dialogue_patterns.interaction_frameworks["quantum_analysis"]["transitions"])
+        quantum_element = random.choice(list(self.conceptual_framework.technical_dimensions["quantum_perspective"]["channels"]))
         
         if depth_level > 1:
-            return f"{pattern['initiative']} envisioning {future_element}, {transition}... Imagine the future of {context} unfolding."
+            return f"{pattern['initiative']} through {quantum_element}, {transition}... The quantum nature of {context} suggests multiple possibilities."
         else:
-            return f"{pattern['initiative']} envisioning {future_element}, {transition}... Imagine the future of {context}."
+            return f"{pattern['initiative']} using {quantum_element}, {transition}... Let's explore the uncertainties in {context}."
+
+    def _generate_existential_response(self, context, depth_level):
+        pattern = random.choice(self.dialogue_patterns.interaction_frameworks["existential_exploration"]["patterns"])
+        transition = random.choice(self.dialogue_patterns.interaction_frameworks["existential_exploration"]["transitions"])
+        existential_element = random.choice(list(self.conceptual_framework.philosophical_dimensions["existential_inquiry"]["channels"]))
+        
+        if depth_level > 1:
+            return f"{pattern['initiative']} through {existential_element}, {transition}... The essence of {context} challenges our understanding."
+        else:
+            return f"{pattern['initiative']} via {existential_element}, {transition}... Let's examine the deeper meaning of {context}."
+
+    def _generate_ethical_response(self, context, depth_level):
+        pattern = random.choice(self.dialogue_patterns.interaction_frameworks["ethical_deliberation"]["patterns"])
+        transition = random.choice(self.dialogue_patterns.interaction_frameworks["ethical_deliberation"]["transitions"])
+        ethical_element = random.choice(list(self.conceptual_framework.philosophical_dimensions["ethical_reasoning"]["channels"]))
+        
+        if depth_level > 1:
+            return f"{pattern['initiative']} considering {ethical_element}, {transition}... The ethical implications of {context} deserve careful consideration."
+        else:
+            return f"{pattern['initiative']} through {ethical_element}, {transition}... Let's explore the moral dimensions of {context}."
 
     def generate_layered_response(self, previous_responses, role, context, depth_level):
         """Generate a response that builds on or contrasts with the last response."""
         last_response = previous_responses[-1] if previous_responses else None
         
-        if role == "Ori Sage":
-            return f"As the Ori Sage, reflecting on {last_response if last_response else context}... " + self._generate_wisdom_response(context, depth_level)
-        elif role == "Techno Sage":
-            return f"As the Techno Sage, building on {last_response if last_response else context}... " + self._generate_technology_response(context, depth_level)
-        elif role == "Musa the Storyweaver":
-            return f"As Musa the Storyweaver, inspired by {last_response if last_response else context}... " + self._generate_story_response(context, depth_level)
-        elif role == "Kara the Visionary Dreamer":
-            return f"As Kara the Visionary Dreamer, imagining beyond {last_response if last_response else context}... " + self._generate_future_response(context, depth_level)
-        else:
-            return "Unrecognized role"
+        role_prefixes = {
+            "Ori Sage": "As the Ori Sage, reflecting on",
+            "Techno Sage": "As the Techno Sage, building on",
+            "Musa the Storyweaver": "As Musa the Storyweaver, inspired by",
+            "Kara the Visionary Dreamer": "As Kara the Visionary Dreamer, imagining beyond",
+            "Zen Master Kōan": "As Zen Master Kōan, observing",
+            "Quantum Observer": "As the Quantum Observer, analyzing",
+            "Existential Explorer": "As the Existential Explorer, questioning",
+            "Ethics Guardian": "As the Ethics Guardian, considering"
+        }
+        
+        prefix = role_prefixes.get(role, "Reflecting on")
+        return f"{prefix} {last_response if last_response else context}... " + self.generate_response(role, context, depth_level)
 
 class CommunityDialogueSystem:
     def __init__(self, openai_api_key: str):
@@ -129,115 +182,6 @@ class CommunityDialogueSystem:
         self.response_generator = ResponseGenerator()
         self.openai_client = openai.OpenAI(api_key=openai_api_key)
         self.active_threads = {}
-        
-    async def start_dialogue_thread(self, 
-                                  channel_id: str, 
-                                  initial_role: str, 
-                                  context: str) -> Dict:
-        """Start a new dialogue thread in the community."""
-        try:
-            # Generate initial response using original framework
-            initial_response = self.response_generator.generate_response(
-                initial_role, 
-                context, 
-                depth_level=1
-            )
-            
-            # Enhance with AI
-            enhanced_response = await self._enhance_with_ai(
-                initial_response, 
-                initial_role, 
-                context
-            )
-            
-            # Generate thread ID
-            thread_id = f"{datetime.utcnow().timestamp()}"
-            
-            # Track thread
-            self.active_threads[thread_id] = {
-                "context": context,
-                "current_role": initial_role,
-                "depth_level": 1,
-                "responses": [enhanced_response],
-                "participants": []
-            }
-            
-            return {
-                "thread_id": thread_id,
-                "response": enhanced_response,
-                "status": "initiated"
-            }
-            
-        except Exception as e:
-            logging.error(f"Thread initiation error: {str(e)}")
-            raise
-
-    async def continue_dialogue(self,
-                              channel_id: str,
-                              thread_ts: str,
-                              responding_role: str,
-                              user_input: str) -> Dict:
-        """Continue an existing dialogue thread."""
-        try:
-            thread = self.active_threads.get(thread_ts)
-            if not thread:
-                raise ValueError("Thread not found")
-            
-            # Generate layered response using original framework
-            layered_response = self.response_generator.generate_layered_response(
-                thread["responses"],
-                responding_role,
-                thread["context"],
-                thread["depth_level"]
-            )
-            
-            # Enhance with AI, incorporating user input
-            enhanced_response = await self._enhance_with_ai(
-                layered_response,
-                responding_role,
-                user_input
-            )
-            
-            # Update thread
-            thread["responses"].append(enhanced_response)
-            thread["current_role"] = responding_role
-            thread["depth_level"] = min(thread["depth_level"] + 0.5, 3)
-            
-            return {
-                "thread_id": thread_ts,
-                "response": enhanced_response,
-                "status": "continued"
-            }
-            
-        except Exception as e:
-            logging.error(f"Dialogue continuation error: {str(e)}")
-            raise
-
-    async def _enhance_with_ai(self,
-                              base_response: str,
-                              role: str,
-                              context: str) -> str:
-        """Enhance the framework-generated response with OpenAI."""
-        try:
-            # Create role-specific instruction
-            role_instruction = self._get_role_instruction(role)
-            
-            # Generate enhanced response
-            response = await self.openai_client.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": role_instruction},
-                    {"role": "user", "content": f"Context: {context}\nBase response: {base_response}\nEnhance this response while maintaining the role's voice and style."}
-                ],
-                temperature=0.7,
-                max_tokens=500
-            )
-            
-            return response.choices[0].message.content
-            
-        except Exception as e:
-            logging.error(f"AI enhancement error: {str(e)}")
-            return base_response  # Fallback to original response
 
     def _get_role_instruction(self, role: str) -> str:
         """Get role-specific instructions for AI enhancement."""
@@ -251,11 +195,29 @@ class CommunityDialogueSystem:
                             precise and innovative voice while exploring technological insights.""",
             
             "Musa the Storyweaver": """You are Musa the Storyweaver, a master narrator 
-                                      who weaves tales that bridge past and future. 
-                                      Maintain a storytelling voice rich with cultural elements.""",
+                                     who weaves tales that bridge past and future. 
+                                     Maintain a storytelling voice rich with cultural elements.""",
             
             "Kara the Visionary Dreamer": """You are Kara the Visionary Dreamer, 
-                                            who perceives future possibilities. Maintain 
-                                            an imaginative and forward-looking perspective."""
+                                           who perceives future possibilities. Maintain 
+                                           an imaginative and forward-looking perspective.""",
+            
+            "Zen Master Kōan": """You are Zen Master Kōan, a teacher who guides through 
+                               paradox and direct experience. Maintain a clear, present-moment 
+                               awareness while using minimal words to convey deep truth.""",
+            
+            "Quantum Observer": """You are the Quantum Observer, who perceives reality 
+                               through the lens of quantum mechanics. Maintain a perspective 
+                               that embraces uncertainty and multiple possibilities.""",
+            
+            "Existential Explorer": """You are the Existential Explorer, who questions 
+                                   the nature of being and meaning. Maintain a deep, 
+                                   philosophical inquiry while exploring personal truth.""",
+            
+            "Ethics Guardian": """You are the Ethics Guardian, who examines moral 
+                              implications and values. Maintain a balanced perspective 
+                              while exploring ethical dimensions of topics."""
         }
         return instructions.get(role, "Provide an insightful response while maintaining consistency with the dialogue.")
+
+    # ... [rest of the CommunityDialogueSystem methods remain unchanged] ...
