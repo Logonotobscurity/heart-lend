@@ -1,3 +1,18 @@
+:root {
+    /* Role-specific text colors */
+    --ori-color: var(--bs-teal);
+    --techno-color: var(--bs-cyan);
+    --musa-color: var(--bs-green);
+    --kara-color: var(--bs-yellow);
+    --zen-color: var(--bs-indigo);
+    --quantum-color: var(--bs-blue);
+    --existential-color: var(--bs-purple);
+    --ethics-color: var(--bs-pink);
+    
+    /* Message background opacity */
+    --message-bg-opacity: 0.1;
+}
+
 .chat-container {
     min-height: calc(100vh - 100px);
 }
@@ -9,43 +24,106 @@
 }
 
 .message {
-    margin-bottom: 1rem;
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
+    border-left: 4px solid;
+    transition: all 0.3s ease;
 }
 
+.message:hover {
+    transform: translateX(4px);
+}
+
+.message strong {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Role-specific styles */
 .message-ori {
-    background-color: var(--bs-primary-bg-subtle);
+    background-color: rgba(var(--bs-teal-rgb), var(--message-bg-opacity));
+    border-left-color: var(--ori-color);
+}
+.message-ori strong {
+    color: var(--ori-color);
 }
 
 .message-techno {
-    background-color: var(--bs-info-bg-subtle);
+    background-color: rgba(var(--bs-cyan-rgb), var(--message-bg-opacity));
+    border-left-color: var(--techno-color);
+}
+.message-techno strong {
+    color: var(--techno-color);
 }
 
 .message-musa {
-    background-color: var(--bs-success-bg-subtle);
+    background-color: rgba(var(--bs-green-rgb), var(--message-bg-opacity));
+    border-left-color: var(--musa-color);
+}
+.message-musa strong {
+    color: var(--musa-color);
 }
 
 .message-kara {
-    background-color: var(--bs-warning-bg-subtle);
+    background-color: rgba(var(--bs-yellow-rgb), var(--message-bg-opacity));
+    border-left-color: var(--kara-color);
+}
+.message-kara strong {
+    color: var(--kara-color);
 }
 
 .message-zen {
-    background-color: var(--bs-secondary-bg-subtle);
+    background-color: rgba(var(--bs-indigo-rgb), var(--message-bg-opacity));
+    border-left-color: var(--zen-color);
+}
+.message-zen strong {
+    color: var(--zen-color);
 }
 
 .message-quantum {
-    background-color: var(--bs-info-bg-subtle);
+    background-color: rgba(var(--bs-blue-rgb), var(--message-bg-opacity));
+    border-left-color: var(--quantum-color);
+}
+.message-quantum strong {
+    color: var(--quantum-color);
 }
 
 .message-existential {
-    background-color: var(--bs-dark-bg-subtle);
+    background-color: rgba(var(--bs-purple-rgb), var(--message-bg-opacity));
+    border-left-color: var(--existential-color);
+}
+.message-existential strong {
+    color: var(--existential-color);
 }
 
 .message-ethics {
-    background-color: var(--bs-light-bg-subtle);
+    background-color: rgba(var(--bs-pink-rgb), var(--message-bg-opacity));
+    border-left-color: var(--ethics-color);
+}
+.message-ethics strong {
+    color: var(--ethics-color);
 }
 
+.message p {
+    margin-bottom: 0;
+    line-height: 1.6;
+    color: var(--bs-body-color);
+}
+
+.message-system {
+    background-color: rgba(var(--bs-danger-rgb), var(--message-bg-opacity));
+    border-left-color: var(--bs-danger);
+}
+
+.message-system strong {
+    color: var(--bs-danger);
+}
+
+/* Accordion and list group styles */
 .accordion-button:not(.collapsed) {
     background-color: var(--bs-primary-bg-subtle);
     color: var(--bs-primary);

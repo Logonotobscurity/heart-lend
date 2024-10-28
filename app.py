@@ -61,66 +61,70 @@ def suggest_topic():
     
     try:
         # Generate topic suggestions using OpenAI
-        prompt = """Based on the conversation context, suggest 3 related discussion topics.
-        Each topic should include:
+        prompt = f"""Based on the conversation context: '{current_context}', suggest 3 related discussion topics.
+        Each topic should be relevant to the themes of consciousness, AI, and Yoruba spiritual practices.
+        For each topic include:
         - A clear, engaging title
         - A brief description explaining the topic
         - A category (Philosophy, Technology, Spirituality, Ethics, or Culture)
         
-        Format the response as a JSON object with this structure:
-        {
+        Format your response exactly like this example:
+        {{
             "topics": [
-                {
-                    "title": "Topic Title",
-                    "description": "Topic description",
-                    "category": "Category"
-                }
+                {{
+                    "title": "Digital Consciousness",
+                    "description": "Exploring parallels between AI awareness and spiritual consciousness",
+                    "category": "Philosophy"
+                }}
             ]
-        }"""
+        }}"""
         
         response = dialogue_system.openai_client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": prompt},
-                {"role": "user", "content": f"Context: {current_context}"}
+                {"role": "system", "content": "You are a helpful assistant that generates discussion topics in JSON format."},
+                {"role": "user", "content": prompt}
             ],
             temperature=0.7,
-            max_tokens=500,
-            response_format={"type": "json_object"}
+            max_tokens=800
         )
         
         # Parse the response
         if response.choices and response.choices[0].message:
-            suggestions = json.loads(response.choices[0].message.content)
-            new_topics = []
-            
-            for suggestion in suggestions.get('topics', []):
-                if all(key in suggestion for key in ['title', 'description', 'category']):
-                    topic = Topic()
-                    topic.title = suggestion['title']
-                    topic.description = suggestion['description']
-                    topic.category = suggestion['category']
-                    topic.suggested_by_ai = True
-                    db.session.add(topic)
-                    new_topics.append({
-                        'id': None,  # Will be set after commit
-                        'title': suggestion['title'],
-                        'description': suggestion['description'],
-                        'category': suggestion['category']
-                    })
-            
-            db.session.commit()
-            
-            # Update topic IDs after commit
-            for i, topic in enumerate(new_topics):
-                topic_obj = Topic.query.filter_by(
-                    title=topic['title'],
-                    description=topic['description']
-                ).first()
-                if topic_obj:
-                    topic['id'] = topic_obj.id
-            
-            return jsonify({"status": "success", "topics": new_topics})
+            try:
+                suggestions = json.loads(response.choices[0].message.content)
+                new_topics = []
+                
+                for suggestion in suggestions.get('topics', []):
+                    if all(key in suggestion for key in ['title', 'description', 'category']):
+                        topic = Topic()
+                        topic.title = suggestion['title']
+                        topic.description = suggestion['description']
+                        topic.category = suggestion['category']
+                        topic.suggested_by_ai = True
+                        db.session.add(topic)
+                        new_topics.append({
+                            'id': None,  # Will be set after commit
+                            'title': suggestion['title'],
+                            'description': suggestion['description'],
+                            'category': suggestion['category']
+                        })
+                
+                db.session.commit()
+                
+                # Update topic IDs after commit
+                for i, topic in enumerate(new_topics):
+                    topic_obj = Topic.query.filter_by(
+                        title=topic['title'],
+                        description=topic['description']
+                    ).first()
+                    if topic_obj:
+                        topic['id'] = topic_obj.id
+                
+                return jsonify({"status": "success", "topics": new_topics})
+            except json.JSONDecodeError as e:
+                logger.error(f"Error parsing OpenAI response: {str(e)}")
+                return jsonify({"status": "error", "message": "Invalid response format from AI"}), 500
         else:
             return jsonify({"status": "error", "message": "Failed to generate suggestions"}), 500
     
