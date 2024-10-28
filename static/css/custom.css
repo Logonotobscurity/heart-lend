@@ -6,8 +6,12 @@
     --input-bg: var(--bs-body-bg);
     --border-color: var(--bs-border-color);
     
-    /* Message background opacity */
-    --message-bg-opacity: 0.1;
+    /* Persona category colors */
+    --spiritual-color: var(--bs-purple);
+    --tech-color: var(--bs-cyan);
+    --cultural-color: var(--bs-green);
+    --philosophy-color: var(--bs-indigo);
+    --future-color: var(--bs-pink);
     
     /* Transitions */
     --transition-speed: 0.3s;
@@ -26,13 +30,14 @@
 
 /* Sidebar */
 .chat-sidebar {
-    width: 300px;
+    width: 340px;
     background: var(--sidebar-bg);
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
     transition: transform var(--transition-speed) ease;
     position: relative;
+    overflow-y: auto;
 }
 
 .sidebar-toggle {
@@ -80,32 +85,111 @@
 
 .topics-list button:hover {
     background: var(--bs-primary-bg-subtle);
+    transform: translateY(-2px);
 }
 
-/* Persona Buttons */
-.persona-list {
+/* Personas Grid */
+.personas-section {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.personas-grid {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 1.5rem;
 }
 
-.persona-btn {
-    text-align: left;
-    padding: 0.75rem;
+.persona-category {
+    padding: 0.5rem;
     border-radius: 0.5rem;
-    background: transparent;
+}
+
+.category-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+    opacity: 0.8;
+}
+
+.persona-cards {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.persona-card {
+    position: relative;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    background: var(--chat-bg);
     border: 1px solid var(--border-color);
+    cursor: pointer;
     transition: all var(--transition-speed) ease;
-    color: var(--bs-body-color);
 }
 
-.persona-btn:hover {
-    background: var(--bs-primary-bg-subtle);
+.persona-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.persona-btn.excluded {
+.persona-card.excluded {
     opacity: 0.5;
-    text-decoration: line-through;
+    transform: scale(0.98);
+}
+
+.persona-card.excluded:hover {
+    opacity: 0.7;
+}
+
+.persona-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.persona-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.persona-card p {
+    font-size: 0.9rem;
+    margin: 0;
+    opacity: 0.8;
+}
+
+/* Category-specific styles */
+.spiritual-wisdom .persona-icon {
+    background: rgba(var(--bs-purple-rgb), 0.1);
+    color: var(--spiritual-color);
+}
+
+.tech-science .persona-icon {
+    background: rgba(var(--bs-cyan-rgb), 0.1);
+    color: var(--tech-color);
+}
+
+.cultural-narrative .persona-icon {
+    background: rgba(var(--bs-green-rgb), 0.1);
+    color: var(--cultural-color);
+}
+
+.philosophy-ethics .persona-icon {
+    background: rgba(var(--bs-indigo-rgb), 0.1);
+    color: var(--philosophy-color);
+}
+
+.future-vision .persona-icon {
+    background: rgba(var(--bs-pink-rgb), 0.1);
+    color: var(--future-color);
 }
 
 /* Main Chat Area */
@@ -242,5 +326,9 @@
     
     .message {
         max-width: 90%;
+    }
+    
+    .persona-cards {
+        grid-template-columns: 1fr;
     }
 }
