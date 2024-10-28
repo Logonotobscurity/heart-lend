@@ -10,35 +10,51 @@
         </div>
     </div>
 
-    <!-- Desktop Fixed Sidebar Toggle -->
-    <button class="sidebar-toggle-fixed" onclick="toggleSidebar()">
-        <i class="bi bi-list"></i>
-    </button>
-
-    <!-- Horizontal Persona Selector -->
-    <div class="persona-selector">
-        <h2 class="section-title mb-3">Choose Your AI Guides</h2>
-        <p class="guide-text mb-3">Click to include or exclude personas from the conversation. Each brings a unique perspective.</p>
-        <div class="personas-scroll">
-            <div class="personas-row">
-                <!-- [Previous persona cards remain unchanged] -->
-                {% include "persona_cards.html" %}
+    <!-- Horizontal Persona Selector - Moved above chat area -->
+    <div class="persona-selector mb-4">
+        <div class="container-fluid">
+            <h2 class="section-title mb-3">Choose Your AI Guides</h2>
+            <p class="guide-text mb-3">Click to include or exclude personas from the conversation. Each brings a unique perspective.</p>
+            <div class="personas-scroll">
+                <div class="personas-row">
+                    {% include "persona_cards.html" %}
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Clear Section Divider -->
+    <hr class="section-divider my-4">
+
+    <!-- Desktop Fixed Sidebar Toggle -->
+    <button class="sidebar-toggle-fixed d-none d-lg-flex" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Mobile Sidebar Toggle -->
+    <button class="sidebar-toggle-mobile d-lg-none" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+        <span>Topics</span>
+    </button>
+
     <!-- Desktop Sidebar -->
     <div class="chat-sidebar" id="chatSidebar">
-        <!-- Topics Section -->
+        <!-- Topics Section with Clear Header -->
         <div class="sidebar-section">
             <div class="section-header">
-                <h2 class="section-title">Suggested Topics</h2>
-                <p class="guide-text">Explore these AI-curated topics or start your own conversation.</p>
+                <h2 class="section-title">
+                    <i class="bi bi-lightbulb me-2"></i>
+                    Suggested Topics
+                </h2>
+                <p class="guide-text">Topics are dynamically suggested based on your conversation. Click any topic to explore it further.</p>
             </div>
             <div id="topics-list" class="topics-list">
-                <div class="placeholder-text text-center py-4">
-                    <i class="bi bi-lightbulb fs-2 mb-3"></i>
-                    <p>Start a conversation to receive personalized topic suggestions</p>
+                <!-- Loading State -->
+                <div class="loading-indicator text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading topics...</span>
+                    </div>
+                    <p class="mt-2">Loading suggested topics...</p>
                 </div>
             </div>
         </div>
@@ -46,11 +62,16 @@
 
     <!-- Main Chat Area -->
     <div class="chat-main">
-        <!-- Active Topics -->
-        <div class="active-topics">
-            <div class="topics-scroll">
-                <div class="topics-row" id="active-topics">
-                    <!-- Active topics will be added here -->
+        <!-- Active Topics with Clear Header -->
+        <div class="active-topics-section">
+            <div class="container-fluid">
+                <h3 class="h6 mb-2">Active Topics</h3>
+                <div class="active-topics">
+                    <div class="topics-scroll">
+                        <div class="topics-row" id="active-topics">
+                            <!-- Active topics will be added here -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -66,12 +87,14 @@
         
         <!-- Input Area -->
         <div class="input-container">
-            <div class="input-wrapper">
-                <textarea id="message-input" class="form-control" rows="1" 
-                    placeholder="Share your thoughts or ask a question..."></textarea>
-                <button id="send-message" class="btn btn-primary">
-                    <i class="bi bi-send"></i>
-                </button>
+            <div class="container-fluid">
+                <div class="input-wrapper">
+                    <textarea id="message-input" class="form-control" rows="1" 
+                        placeholder="Share your thoughts or ask a question..."></textarea>
+                    <button id="send-message" class="btn btn-primary">
+                        <i class="bi bi-send"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
