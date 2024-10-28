@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h1 class="h2 mb-4">Conversation Patterns & Insights</h1>
+    
+    <!-- Visualization Controls -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Time Range</h5>
+                    <select class="form-select" id="timeRange">
+                        <option value="day">Last 24 Hours</option>
+                        <option value="week">Last Week</option>
+                        <option value="month">Last Month</option>
+                        <option value="all">All Time</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">View Type</h5>
+                    <select class="form-select" id="viewType">
+                        <option value="interactions">Persona Interactions</option>
+                        <option value="topics">Topic Flow</option>
+                        <option value="sentiment">Response Patterns</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visualization Area -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <canvas id="mainVisualization"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Insights</h5>
+                    <div id="visualizationInsights">
+                        <div class="placeholder-content">
+                            Select a time range and view type to see insights
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Top Topics</h5>
+                    <div id="topTopics">
+                        <div class="placeholder-content">
+                            Loading top discussion topics...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/static/js/visualization.js"></script>
+{% endblock %}
