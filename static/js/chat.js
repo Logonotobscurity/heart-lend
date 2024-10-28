@@ -1,6 +1,12 @@
-let activeRole = null;
 let currentThread = null;
 let selectedTopic = null;
+let excludedPersonas = new Set();
+let availablePersonas = [
+    "Ori Sage", "Techno Sage", "Musa the Storyweaver", 
+    "Kara the Visionary Dreamer", "Zen Master Kōan",
+    "Quantum Observer", "Existential Explorer", "Ethics Guardian"
+];
+let currentPersonaIndex = 0;
 
 document.addEventListener('DOMContentLoaded', function() {
     const messageInput = document.getElementById('message-input');
@@ -11,23 +17,31 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load initial topics
     loadTopics();
     
-    // Role selection
+    // Convert role buttons to exclude toggles
     document.querySelectorAll('[data-role]').forEach(button => {
         button.addEventListener('click', function() {
-            activeRole = this.dataset.role;
-            document.querySelectorAll('[data-role]').forEach(btn => 
-                btn.classList.remove('active'));
-            this.classList.add('active');
+            const role = this.dataset.role;
+            if (excludedPersonas.has(role)) {
+                excludedPersonas.delete(role);
+                this.classList.remove('excluded');
+            } else {
+                excludedPersonas.add(role);
+                this.classList.add('excluded');
+            }
         });
     });
     
+    // Get next available persona
+    function getNextPersona() {
+        const activePersonas = availablePersonas.filter(p => !excludedPersonas.has(p));
+        if (activePersonas.length === 0) return availablePersonas[0]; // Fallback to first persona if all are excluded
+        
+        currentPersonaIndex = (currentPersonaIndex + 1) % activePersonas.length;
+        return activePersonas[currentPersonaIndex];
+    }
+    
     // Send message
     sendButton.addEventListener('click', async function() {
-        if (!activeRole) {
-            alert('Please select an AI persona first');
-            return;
-        }
-        
         const message = messageInput.value.trim();
         if (!message) return;
         
@@ -36,6 +50,8 @@ document.addEventListener('DOMContentLoaded', function() {
         messageInput.value = '';
         
         try {
+            const activeRole = getNextPersona();
+            
             if (!currentThread) {
                 // Start new dialogue
                 const response = await fetch('/api/start_dialogue', {

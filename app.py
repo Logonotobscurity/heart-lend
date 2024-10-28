@@ -5,6 +5,7 @@ from sqlalchemy.orm import DeclarativeBase
 from dialogue_system import CommunityDialogueSystem
 import openai
 import random
+import json
 
 class Base(DeclarativeBase):
     pass
@@ -52,29 +53,60 @@ async def suggest_topic():
     current_context = request.json.get('context', '')
     
     # Generate topic suggestions using OpenAI
-    response = dialogue_system.openai_client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "Based on the current conversation context, suggest 3 related discussion topics. Format as JSON array with title, description, and category keys."},
-            {"role": "user", "content": f"Context: {current_context}"}
-        ],
-        temperature=0.7,
-        max_tokens=500,
-        response_format={ "type": "json_object" }
-    )
+    prompt = """Based on the conversation context, suggest 3 related discussion topics.
+    Each topic should include:
+    - A clear, engaging title
+    - A brief description explaining the topic
+    - A category (Philosophy, Technology, Spirituality, Ethics, or Culture)
+    
+    Format the response as a JSON object with this structure:
+    {
+        "topics": [
+            {
+                "title": "Topic Title",
+                "description": "Topic description",
+                "category": "Category"
+            }
+        ]
+    }"""
     
     try:
-        suggestions = response.choices[0].message.content
+        response = dialogue_system.openai_client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": f"Context: {current_context}"}
+            ],
+            temperature=0.7,
+            max_tokens=500,
+            response_format={"type": "json_object"}
+        )
+        
+        # Parse the response
+        suggestions = json.loads(response.choices[0].message.content)
+        new_topics = []
+        
         for suggestion in suggestions.get('topics', []):
-            topic = Topic(
-                title=suggestion['title'],
-                description=suggestion['description'],
-                category=suggestion['category'],
-                suggested_by_ai=True
-            )
-            db.session.add(topic)
+            # Validate required fields
+            if all(key in suggestion for key in ['title', 'description', 'category']):
+                topic = Topic(
+                    title=suggestion['title'],
+                    description=suggestion['description'],
+                    category=suggestion['category'],
+                    suggested_by_ai=True
+                )
+                db.session.add(topic)
+                new_topics.append({
+                    'title': suggestion['title'],
+                    'description': suggestion['description'],
+                    'category': suggestion['category']
+                })
+        
         db.session.commit()
-        return jsonify({"status": "success", "topics": suggestions.get('topics', [])})
+        return jsonify({"status": "success", "topics": new_topics})
+    
+    except json.JSONDecodeError as e:
+        return jsonify({"status": "error", "message": "Invalid response format"}), 500
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 

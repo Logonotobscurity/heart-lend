@@ -64,3 +64,13 @@
     background-color: var(--bs-primary);
     border-color: var(--bs-primary);
 }
+
+.list-group-item.excluded {
+    opacity: 0.5;
+    text-decoration: line-through;
+    background-color: var(--bs-danger-bg-subtle);
+}
+
+.list-group-item.excluded:hover {
+    background-color: var(--bs-danger-bg-subtle);
+}
