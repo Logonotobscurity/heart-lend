@@ -7,6 +7,8 @@ let availablePersonas = [
     "Quantum Observer", "Existential Explorer", "Ethics Guardian"
 ];
 let currentPersonaIndex = 0;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
 
 document.addEventListener('DOMContentLoaded', function() {
     const messageInput = document.getElementById('message-input');
@@ -34,27 +36,51 @@ document.addEventListener('DOMContentLoaded', function() {
     // Get next available persona
     function getNextPersona() {
         const activePersonas = availablePersonas.filter(p => !excludedPersonas.has(p));
-        if (activePersonas.length === 0) return availablePersonas[0]; // Fallback to first persona if all are excluded
-        
+        if (activePersonas.length === 0) return availablePersonas[0];
         currentPersonaIndex = (currentPersonaIndex + 1) % activePersonas.length;
         return activePersonas[currentPersonaIndex];
     }
     
-    // Send message
+    // Retry mechanism for failed requests
+    async function fetchWithRetry(url, options, retries = MAX_RETRIES) {
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            if (data.status === "error") {
+                throw new Error(data.message || "Server error");
+            }
+            return data;
+        } catch (error) {
+            if (retries > 0) {
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                return fetchWithRetry(url, options, retries - 1);
+            }
+            throw error;
+        }
+    }
+    
+    // Send message with improved error handling
     sendButton.addEventListener('click', async function() {
         const message = messageInput.value.trim();
         if (!message) return;
         
-        // Add user message to chat
-        appendMessage('User', message);
-        messageInput.value = '';
+        // Disable input while processing
+        messageInput.disabled = true;
+        sendButton.disabled = true;
         
         try {
+            // Add user message to chat
+            appendMessage('User', message);
+            messageInput.value = '';
+            
             const activeRole = getNextPersona();
             
             if (!currentThread) {
                 // Start new dialogue
-                const response = await fetch('/api/start_dialogue', {
+                const data = await fetchWithRetry('/api/start_dialogue', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
@@ -63,15 +89,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         topic_id: selectedTopic
                     })
                 });
-                const data = await response.json();
+                
                 currentThread = data.thread_id;
                 appendMessage(activeRole, data.response);
                 
-                // Request topic suggestions based on the context
-                suggestTopics(message);
+                // Request topic suggestions
+                suggestTopics(message).catch(error => {
+                    console.error('Error suggesting topics:', error);
+                    appendSystemMessage('Failed to load topic suggestions. The conversation will continue without them.');
+                });
+                
             } else {
                 // Continue dialogue
-                const response = await fetch('/api/continue_dialogue', {
+                const data = await fetchWithRetry('/api/continue_dialogue', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
@@ -80,38 +110,56 @@ document.addEventListener('DOMContentLoaded', function() {
                         message: message
                     })
                 });
-                const data = await response.json();
+                
                 appendMessage(activeRole, data.response);
             }
         } catch (error) {
             console.error('Error:', error);
-            appendMessage('System', 'An error occurred. Please try again.');
+            appendSystemMessage(`An error occurred: ${error.message}. Please try again.`);
+            
+            // If thread creation failed, reset thread
+            if (!currentThread) {
+                currentThread = null;
+            }
+        } finally {
+            // Re-enable input
+            messageInput.disabled = false;
+            sendButton.disabled = false;
+        }
+    });
+    
+    // Handle enter key in message input
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendButton.click();
         }
     });
     
     async function loadTopics() {
         try {
-            const response = await fetch('/api/topics');
-            const topics = await response.json();
+            const topics = await fetchWithRetry('/api/topics', {
+                method: 'GET',
+                headers: {'Content-Type': 'application/json'}
+            });
             updateTopicsList(topics);
         } catch (error) {
             console.error('Error loading topics:', error);
+            appendSystemMessage('Failed to load topics. Please refresh the page to try again.');
         }
     }
     
     async function suggestTopics(context) {
         try {
-            const response = await fetch('/api/topics/suggest', {
+            const data = await fetchWithRetry('/api/topics/suggest', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ context })
             });
-            const data = await response.json();
-            if (data.status === 'success') {
-                updateTopicsList(data.topics);
-            }
+            updateTopicsList(data.topics);
         } catch (error) {
             console.error('Error suggesting topics:', error);
+            throw error; // Re-throw to be handled by caller
         }
     }
     
@@ -145,6 +193,17 @@ document.addEventListener('DOMContentLoaded', function() {
         messageDiv.innerHTML = `
             <strong>${role}:</strong>
             <p>${content}</p>
+        `;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    function appendSystemMessage(content) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message message-system';
+        messageDiv.innerHTML = `
+            <strong>System:</strong>
+            <p class="text-danger">${content}</p>
         `;
         chatMessages.appendChild(messageDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;

@@ -48,29 +48,31 @@ def get_topics():
     } for t in topics])
 
 @app.route('/api/topics/suggest', methods=['POST'])
-async def suggest_topic():
+def suggest_topic():
     from models import Topic
     current_context = request.json.get('context', '')
-    
-    # Generate topic suggestions using OpenAI
-    prompt = """Based on the conversation context, suggest 3 related discussion topics.
-    Each topic should include:
-    - A clear, engaging title
-    - A brief description explaining the topic
-    - A category (Philosophy, Technology, Spirituality, Ethics, or Culture)
-    
-    Format the response as a JSON object with this structure:
-    {
-        "topics": [
-            {
-                "title": "Topic Title",
-                "description": "Topic description",
-                "category": "Category"
-            }
-        ]
-    }"""
+    if not current_context:
+        return jsonify({"status": "error", "message": "Context is required"}), 400
     
     try:
+        # Generate topic suggestions using OpenAI
+        prompt = """Based on the conversation context, suggest 3 related discussion topics.
+        Each topic should include:
+        - A clear, engaging title
+        - A brief description explaining the topic
+        - A category (Philosophy, Technology, Spirituality, Ethics, or Culture)
+        
+        Format the response as a JSON object with this structure:
+        {
+            "topics": [
+                {
+                    "title": "Topic Title",
+                    "description": "Topic description",
+                    "category": "Category"
+                }
+            ]
+        }"""
+        
         response = dialogue_system.openai_client.chat.completions.create(
             model="gpt-4",
             messages=[
@@ -87,7 +89,6 @@ async def suggest_topic():
         new_topics = []
         
         for suggestion in suggestions.get('topics', []):
-            # Validate required fields
             if all(key in suggestion for key in ['title', 'description', 'category']):
                 topic = Topic(
                     title=suggestion['title'],
@@ -97,12 +98,21 @@ async def suggest_topic():
                 )
                 db.session.add(topic)
                 new_topics.append({
+                    'id': None,  # Will be set after commit
                     'title': suggestion['title'],
                     'description': suggestion['description'],
                     'category': suggestion['category']
                 })
         
         db.session.commit()
+        
+        # Update topic IDs after commit
+        for i, topic in enumerate(new_topics):
+            topic['id'] = Topic.query.filter_by(
+                title=topic['title'],
+                description=topic['description']
+            ).first().id
+        
         return jsonify({"status": "success", "topics": new_topics})
     
     except json.JSONDecodeError as e:
@@ -111,42 +121,67 @@ async def suggest_topic():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/start_dialogue', methods=['POST'])
-async def start_dialogue():
-    data = request.json
-    initial_role = data.get('role')
-    context = data.get('context')
-    topic_id = data.get('topic_id')
-    
-    response = await dialogue_system.start_dialogue_thread(
-        channel_id="web",
-        initial_role=initial_role,
-        context=context
-    )
-    
-    if topic_id:
-        from models import ChatThread
-        thread = ChatThread.query.filter_by(thread_id=response['thread_id']).first()
-        if thread:
-            thread.topic_id = topic_id
+def start_dialogue():
+    try:
+        data = request.json
+        if not data:
+            return jsonify({"status": "error", "message": "No data provided"}), 400
+            
+        initial_role = data.get('role')
+        context = data.get('context')
+        topic_id = data.get('topic_id')
+        
+        if not all([initial_role, context]):
+            return jsonify({"status": "error", "message": "Role and context are required"}), 400
+        
+        # Generate initial response using the dialogue system
+        response = dialogue_system.generate_response(initial_role, context)
+        thread_id = str(random.randint(1000000, 9999999))
+        
+        if topic_id:
+            from models import ChatThread
+            thread = ChatThread(
+                thread_id=thread_id,
+                context=context,
+                topic_id=topic_id
+            )
+            db.session.add(thread)
             db.session.commit()
-    
-    return jsonify(response)
+        
+        return jsonify({
+            "status": "success",
+            "thread_id": thread_id,
+            "response": response
+        })
+        
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/continue_dialogue', methods=['POST'])
-async def continue_dialogue():
-    data = request.json
-    thread_id = data.get('thread_id')
-    role = data.get('role')
-    user_input = data.get('message')
-    
-    response = await dialogue_system.continue_dialogue(
-        channel_id="web",
-        thread_ts=thread_id,
-        responding_role=role,
-        user_input=user_input
-    )
-    
-    return jsonify(response)
+def continue_dialogue():
+    try:
+        data = request.json
+        if not data:
+            return jsonify({"status": "error", "message": "No data provided"}), 400
+            
+        thread_id = data.get('thread_id')
+        role = data.get('role')
+        user_input = data.get('message')
+        
+        if not all([thread_id, role, user_input]):
+            return jsonify({"status": "error", "message": "Thread ID, role, and message are required"}), 400
+        
+        # Generate response using the dialogue system
+        response = dialogue_system.generate_layered_response(thread_id, role, user_input)
+        
+        return jsonify({
+            "status": "success",
+            "thread_id": thread_id,
+            "response": response
+        })
+        
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 with app.app_context():
     import models
