@@ -112,12 +112,23 @@ def suggest_topic():
         
         current_context = data['context']
         
-        prompt = f"""Based on the conversation context: '{current_context}', suggest 3 related discussion topics.
-        Each topic should be relevant to the themes of consciousness, AI, and Yoruba spiritual practices.
+        # Enhanced prompt for more diverse topics
+        prompt = f"""Based on the conversation context: '{current_context}', suggest 3 diverse discussion topics.
+        Each topic should explore unique intersections between consciousness, AI, and Yoruba spiritual practices.
+        Consider themes like:
+        - Traditional wisdom and technological innovation
+        - Spiritual practices in digital spaces
+        - Ethical implications of AI consciousness
+        - Cultural preservation through technology
+        - Future human-AI relationships
+        - Indigenous knowledge systems
+        - Digital ritual spaces
+        - Algorithmic spirituality
+        
         For each topic include:
-        - A clear, engaging title
-        - A brief description explaining the topic
-        - A category (Philosophy, Technology, Spirituality, Ethics, or Culture)
+        - An engaging, thought-provoking title
+        - A concise description that bridges traditional and modern concepts
+        - A relevant category (Philosophy, Technology, Spirituality, Ethics, or Culture)
         
         Format your response exactly like this example:
         {{
@@ -353,10 +364,30 @@ def init_db():
         if models.Topic.query.count() == 0:
             themes = [
                 {
-                    'title': 'The Nature of Consciousness',
-                    'description': 'Exploring different definitions and understandings of consciousness in both Western and Yoruba contexts.',
+                    'title': 'AI and Consciousness',
+                    'description': 'Exploring the potential for machine consciousness',
                     'category': 'Philosophy'
                 },
+                {
+                    'title': 'Digital Spirituality',
+                    'description': 'Understanding spiritual practices in the digital age',
+                    'category': 'Spirituality'
+                },
+                {
+                    'title': 'Ethics of AI Development',
+                    'description': 'Examining moral implications of AI advancement',
+                    'category': 'Ethics'
+                },
+                {
+                    'title': 'Cultural Integration',
+                    'description': 'Bridging traditional wisdom with modern technology',
+                    'category': 'Culture'
+                },
+                {
+                    'title': 'Future of Human-AI Interaction',
+                    'description': 'Exploring evolving relationships with AI',
+                    'category': 'Technology'
+                }
             ]
             
             try:

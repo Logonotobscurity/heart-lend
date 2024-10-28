@@ -1,10 +1,7 @@
-// Conversation Direction State
-let conversationState = {
-    style: 'balanced',
-    depth: 1.5
-};
-
 // Global variables for chat
+let messageInput = null;
+let sendButton = null;
+let chatMessages = null;
 let currentThread = null;
 let selectedTopic = null;
 let excludedPersonas = new Set();
@@ -14,110 +11,19 @@ let availablePersonas = [
     "Quantum Observer", "Existential Explorer", "Ethics Guardian"
 ];
 let currentPersonaIndex = 0;
-let messageInput;
-let sendButton;
-let chatMessages;
 
-// Initialize all components
-document.addEventListener('DOMContentLoaded', function() {
-    initializeDirectionControls();
-    initializePersonas();
-    initializeScrolling();
-    initializeMessageHandling();
-    loadTopics();
-});
-
-// Persona Management Functions
-function initializePersonas() {
-    document.querySelectorAll('.persona-card').forEach(card => {
-        card.addEventListener('click', function() {
-            const role = this.dataset.role;
-            togglePersona(role, this);
-        });
-        
-        // Add touch feedback
-        card.addEventListener('touchstart', () => {
-            card.style.transform = 'scale(0.95)';
-        });
-        
-        card.addEventListener('touchend', () => {
-            card.style.transform = '';
-        });
-    });
-}
-
-function togglePersona(role, element) {
-    if (!element) return;
-    
-    const allElements = document.querySelectorAll(`[data-role="${role}"]`);
-    
-    if (excludedPersonas.has(role)) {
-        excludedPersonas.delete(role);
-        allElements.forEach(el => {
-            el.classList.remove('excluded');
-            el.classList.add('active');
-        });
-    } else {
-        excludedPersonas.add(role);
-        allElements.forEach(el => {
-            el.classList.add('excluded');
-            el.classList.remove('active');
-        });
-    }
-}
-
-function getNextPersona() {
-    const activePersonas = availablePersonas.filter(p => !excludedPersonas.has(p));
-    if (activePersonas.length === 0) return availablePersonas[0];
-    
-    currentPersonaIndex = (currentPersonaIndex + 1) % activePersonas.length;
-    
-    document.querySelectorAll('.persona-card').forEach(card => {
-        card.classList.remove('active');
-        if (card.dataset.role === activePersonas[currentPersonaIndex]) {
-            card.classList.add('active');
-            card.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-        }
-    });
-    
-    return activePersonas[currentPersonaIndex];
-}
-
-// Direction Control Functions
-function initializeDirectionControls() {
-    document.querySelectorAll('.style-buttons .btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const style = this.dataset.style;
-            setConversationStyle(style);
-        });
-    });
-
-    const depthSlider = document.getElementById('depthSlider');
-    if (depthSlider) {
-        depthSlider.addEventListener('input', function() {
-            setConversationDepth(parseFloat(this.value));
-        });
-    }
-}
-
-function setConversationStyle(style) {
-    conversationState.style = style;
-    
-    document.querySelectorAll('.style-buttons .btn').forEach(button => {
-        button.classList.remove('active');
-        if (button.dataset.style === style) {
-            button.classList.add('active');
-        }
-    });
-}
-
-function setConversationDepth(depth) {
-    conversationState.depth = depth;
-}
+// Conversation Direction State
+let conversationState = {
+    style: 'balanced',
+    depth: 1.5
+};
 
 // Message Handling Functions
 async function handleMessageSend() {
-    if (!messageInput || !sendButton || !chatMessages) return;
+    if (!messageInput || !sendButton || !chatMessages) {
+        console.error('Required chat elements not found');
+        return;
+    }
     
     const message = messageInput.value.trim();
     if (!message) return;
@@ -192,14 +98,19 @@ async function handleMessageSend() {
             currentThread = null;
         }
     } finally {
-        messageInput.disabled = false;
-        sendButton.disabled = false;
-        sendButton.innerHTML = '<i class="bi bi-send"></i>';
+        if (messageInput && sendButton) {
+            messageInput.disabled = false;
+            sendButton.disabled = false;
+            sendButton.innerHTML = '<i class="bi bi-send"></i>';
+        }
     }
 }
 
 function appendMessage(role, content) {
-    if (!chatMessages) return;
+    if (!chatMessages) {
+        console.error('Chat messages container not found');
+        return;
+    }
     
     const messageDiv = document.createElement('div');
     messageDiv.className = `message message-${role.toLowerCase().split(' ')[0]}`;
@@ -212,7 +123,10 @@ function appendMessage(role, content) {
 }
 
 function appendSystemMessage(content) {
-    if (!chatMessages) return;
+    if (!chatMessages) {
+        console.error('Chat messages container not found');
+        return;
+    }
     
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message message-system';
@@ -224,13 +138,25 @@ function appendSystemMessage(content) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
+// Initialize all components
+document.addEventListener('DOMContentLoaded', function() {
+    initializeMessageHandling();
+    initializeDirectionControls();
+    initializePersonas();
+    initializeScrolling();
+    loadTopics();
+});
+
 // Initialize Message Handling
 function initializeMessageHandling() {
     messageInput = document.getElementById('message-input');
     sendButton = document.getElementById('send-message');
     chatMessages = document.getElementById('chat-messages');
     
-    if (!messageInput || !sendButton || !chatMessages) return;
+    if (!messageInput || !sendButton || !chatMessages) {
+        console.error('Failed to initialize chat elements');
+        return;
+    }
 
     sendButton.addEventListener('click', handleMessageSend);
     messageInput.addEventListener('keypress', (e) => {
@@ -241,10 +167,81 @@ function initializeMessageHandling() {
     });
 }
 
+// Direction Control Functions
+function initializeDirectionControls() {
+    document.querySelectorAll('.style-buttons .btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const style = this.dataset.style;
+            setConversationStyle(style);
+        });
+    });
+
+    const depthSlider = document.getElementById('depthSlider');
+    if (depthSlider) {
+        depthSlider.addEventListener('input', function() {
+            setConversationDepth(parseFloat(this.value));
+        });
+    }
+}
+
+function setConversationStyle(style) {
+    conversationState.style = style;
+    
+    document.querySelectorAll('.style-buttons .btn').forEach(button => {
+        button.classList.remove('active');
+        if (button.dataset.style === style) {
+            button.classList.add('active');
+        }
+    });
+}
+
+function setConversationDepth(depth) {
+    conversationState.depth = depth;
+}
+
+// Persona Management
+function initializePersonas() {
+    document.querySelectorAll('.persona-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const role = this.dataset.role;
+            togglePersona(role, this);
+        });
+    });
+}
+
+function togglePersona(role, element) {
+    if (!element) return;
+    
+    if (excludedPersonas.has(role)) {
+        excludedPersonas.delete(role);
+        element.classList.remove('excluded');
+        element.classList.add('active');
+    } else {
+        excludedPersonas.add(role);
+        element.classList.add('excluded');
+        element.classList.remove('active');
+    }
+}
+
+function getNextPersona() {
+    const activePersonas = availablePersonas.filter(p => !excludedPersonas.has(p));
+    if (activePersonas.length === 0) return availablePersonas[0];
+    
+    currentPersonaIndex = (currentPersonaIndex + 1) % activePersonas.length;
+    
+    document.querySelectorAll('.persona-card').forEach(card => {
+        card.classList.remove('active');
+        if (card.dataset.role === activePersonas[currentPersonaIndex]) {
+            card.classList.add('active');
+        }
+    });
+    
+    return activePersonas[currentPersonaIndex];
+}
+
 // Initialize Scrolling
 function initializeScrolling() {
     const scrollContainers = document.querySelectorAll('.personas-scroll, .topics-scroll');
-    
     scrollContainers.forEach(container => {
         let isScrolling = false;
         let startX;
@@ -254,7 +251,6 @@ function initializeScrolling() {
             isScrolling = true;
             startX = e.touches[0].pageX - container.offsetLeft;
             scrollLeft = container.scrollLeft;
-            container.style.scrollBehavior = 'auto';
         });
         
         container.addEventListener('touchmove', (e) => {
@@ -267,24 +263,8 @@ function initializeScrolling() {
         
         container.addEventListener('touchend', () => {
             isScrolling = false;
-            container.style.scrollBehavior = 'smooth';
-        });
-        
-        container.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            container.scrollLeft += e.deltaY;
         });
     });
-}
-
-// Sidebar Toggle
-function toggleSidebar() {
-    const sidebar = document.getElementById('chatSidebar');
-    const mainContent = document.querySelector('.chat-main');
-    if (sidebar && mainContent) {
-        sidebar.classList.toggle('open');
-        mainContent.classList.toggle('sidebar-open');
-    }
 }
 
 // Topic Management
@@ -344,5 +324,15 @@ async function loadTopics() {
         if (topicsList) {
             topicsList.innerHTML = '<p class="text-danger">Failed to load topics. Please try again later.</p>';
         }
+    }
+}
+
+// Sidebar Toggle
+function toggleSidebar() {
+    const sidebar = document.getElementById('chatSidebar');
+    const mainContent = document.querySelector('.chat-main');
+    if (sidebar && mainContent) {
+        sidebar.classList.toggle('open');
+        mainContent.classList.toggle('sidebar-open');
     }
 }
