@@ -134,8 +134,8 @@ def start_dialogue():
         if not all([initial_role, context]):
             return jsonify({"status": "error", "message": "Role and context are required"}), 400
         
-        # Generate initial response using the dialogue system
-        response = dialogue_system.generate_response(initial_role, context)
+        # Generate initial response using the dialogue system with depth level 1
+        response = dialogue_system.response_generator.generate_response(initial_role, context, 1)
         thread_id = str(random.randint(1000000, 9999999))
         
         if topic_id:
@@ -171,8 +171,25 @@ def continue_dialogue():
         if not all([thread_id, role, user_input]):
             return jsonify({"status": "error", "message": "Thread ID, role, and message are required"}), 400
         
+        from models import Message
+        # Calculate depth level based on message count
+        depth_level = min(1 + Message.query.filter_by(thread_id=thread_id).count() // 2, 3)
+        
         # Generate response using the dialogue system
-        response = dialogue_system.generate_layered_response(thread_id, role, user_input)
+        previous_messages = Message.query.filter_by(thread_id=thread_id, role='assistant').all()
+        previous_responses = [msg.content for msg in previous_messages]
+        
+        response = dialogue_system.response_generator.generate_layered_response(
+            previous_responses,
+            role,
+            user_input,
+            depth_level
+        )
+        
+        # Save the message
+        new_message = Message(thread_id=thread_id, role=role, content=response)
+        db.session.add(new_message)
+        db.session.commit()
         
         return jsonify({
             "status": "success",
