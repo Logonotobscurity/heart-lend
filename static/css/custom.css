@@ -1,3 +1,11 @@
+/* Base Layout Styles */
+.chat-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
 /* Persona Selector Styles */
 .persona-selector {
     background: var(--bs-dark);
@@ -17,98 +25,72 @@
     padding: 0 1rem;
 }
 
-/* Direction Controls Styles */
-.direction-controls {
-    background: var(--bs-dark);
-    padding: 2rem 0;
-    border-bottom: 1px solid var(--bs-border-color);
-}
-
-.direction-options .card {
-    height: 100%;
-    border: none;
-}
-
-.style-buttons {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.style-buttons .btn {
-    flex: 1;
-    min-width: 120px;
-}
-
-.depth-control {
-    padding: 0.5rem 0;
-}
-
-.depth-labels {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 0.5rem;
-    color: var(--bs-secondary-color);
-    font-size: 0.875rem;
-}
-
-/* Visualization Section Styles */
-.visualization-section {
-    background: var(--bs-dark);
-    padding: 2rem 0;
-    border-bottom: 1px solid var(--bs-border-color);
-}
-
-.visualization-container {
-    background: var(--bs-dark-subtle);
-    border-radius: 1rem;
-    padding: 1.5rem;
-    height: 400px;
-    position: relative;
-}
-
-#interaction-graph {
-    height: 100%;
-    width: 100%;
-}
-
-.pattern-stats {
-    position: absolute;
-    bottom: 1.5rem;
-    left: 1.5rem;
-    right: 1.5rem;
-    background: var(--bs-dark);
-    border-radius: 0.5rem;
+/* Persona Card Styles */
+.persona-card {
+    flex: 0 0 120px;
     padding: 1rem;
-}
-
-.stat-card {
+    border-radius: 0.75rem;
     text-align: center;
-    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
     background: var(--bs-dark-subtle);
-    border-radius: 0.5rem;
 }
 
-.stat-card h3 {
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-    color: var(--bs-secondary-color);
+.persona-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.stat-card div {
+.persona-card.active {
+    border-color: var(--bs-primary);
+}
+
+/* Persona Category Colors */
+.persona-card[data-category="spiritual"] {
+    background: linear-gradient(45deg, #6f42c1, #6610f2);
+}
+
+.persona-card[data-category="tech"] {
+    background: linear-gradient(45deg, #0dcaf0, #0d6efd);
+}
+
+.persona-card[data-category="cultural"] {
+    background: linear-gradient(45deg, #fd7e14, #6f4e37);
+}
+
+.persona-card[data-category="philosophy"] {
+    background: linear-gradient(45deg, #198754, #20c997);
+}
+
+.persona-card[data-category="future"] {
+    background: linear-gradient(45deg, #e83e8c, #d63384);
+}
+
+.persona-avatar {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 0.75rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.persona-avatar i {
     font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--bs-primary);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.persona-name {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
 }
 
 /* Chat Layout Styles */
-.chat-layout {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    overflow: hidden;
-}
-
 .chat-main {
     flex: 1;
     display: flex;
@@ -135,6 +117,7 @@
     border: 1px solid var(--bs-border-color);
 }
 
+/* Input Area Styles */
 .input-container {
     padding: 1rem;
     background: var(--bs-dark);
@@ -144,6 +127,54 @@
 .input-wrapper {
     display: flex;
     gap: 0.5rem;
+}
+
+/* Settings Modal Styles */
+.style-buttons .btn {
+    flex: 1;
+    white-space: nowrap;
+}
+
+.depth-control {
+    padding: 0.5rem 0;
+}
+
+.depth-labels {
+    margin-top: 0.5rem;
+    color: var(--bs-secondary);
+    font-size: 0.875rem;
+}
+
+/* Visualization Styles */
+.visualization-section {
+    background: var(--bs-dark);
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.visualization-container {
+    background: var(--bs-dark-subtle);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    height: 400px;
+    position: relative;
+}
+
+.pattern-stats {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    right: 1.5rem;
+    background: var(--bs-dark);
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+.stat-card {
+    text-align: center;
+    padding: 1rem;
+    background: var(--bs-dark-subtle);
+    border-radius: 0.5rem;
 }
 
 /* Responsive Adjustments */
@@ -162,5 +193,19 @@
     
     .stat-card {
         margin-bottom: 1rem;
+    }
+    
+    .persona-card {
+        flex: 0 0 100px;
+        padding: 0.75rem;
+    }
+    
+    .persona-avatar {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .persona-name {
+        font-size: 0.75rem;
     }
 }

@@ -12,8 +12,53 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="/">AI Consciousness Explorer</a>
+            <div class="ms-auto">
+                <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#settingsModal">
+                    <i class="bi bi-gear"></i>
+                    <span class="d-none d-md-inline ms-1">Settings</span>
+                </button>
+            </div>
         </div>
     </nav>
+    
+    <!-- Settings Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="settingsModalLabel">Conversation Settings</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <h6 class="mb-3">Conversation Style</h6>
+                        <div class="style-buttons d-flex gap-2">
+                            <button class="btn btn-outline-primary flex-grow-1 active" data-style="balanced">
+                                <i class="bi bi-circle-half"></i> Balanced
+                            </button>
+                            <button class="btn btn-outline-primary flex-grow-1" data-style="philosophical">
+                                <i class="bi bi-book"></i> Philosophical
+                            </button>
+                            <button class="btn btn-outline-primary flex-grow-1" data-style="practical">
+                                <i class="bi bi-gear"></i> Practical
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <h6 class="mb-3">Dialogue Depth</h6>
+                        <div class="depth-control">
+                            <input type="range" class="form-range" id="depthSlider" min="1" max="3" step="0.5" value="1.5">
+                            <div class="depth-labels d-flex justify-content-between text-secondary small">
+                                <span>Surface</span>
+                                <span>Balanced</span>
+                                <span>Deep</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <main>
         {% block content %}{% endblock %}
