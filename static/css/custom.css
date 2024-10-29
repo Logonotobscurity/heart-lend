@@ -39,16 +39,16 @@
 .personas-row {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1.5rem;
     padding: 0.5rem;
 }
 
-/* Persona Cards */
+/* Enhanced Persona Cards */
 .persona-card {
     display: flex;
     align-items: flex-start;
-    gap: 1.5rem;
-    padding: 1.75rem;
+    gap: 2rem;
+    padding: 2rem;
     background: var(--card-bg);
     border: 2px solid var(--border-color);
     border-radius: 1rem;
@@ -58,6 +58,7 @@
     max-width: 800px;
     margin: 0 auto;
     position: relative;
+    min-height: 160px;
 }
 
 .persona-card:hover {
@@ -72,8 +73,8 @@
 }
 
 .persona-avatar {
-    width: 60px;
-    height: 60px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -92,11 +93,11 @@
     padding-right: 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.75rem;
 }
 
 .persona-name {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     font-weight: 600;
     color: var(--bs-heading-color);
     margin: 0;
@@ -110,108 +111,48 @@
     letter-spacing: 0.05em;
     font-weight: 500;
     margin: 0;
-    opacity: 0.9;
+    opacity: 0.95;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .persona-description {
-    font-size: 1rem;
+    font-size: 1.1rem;
     color: var(--bs-secondary-color);
-    margin: 0;
+    margin: 0.5rem 0 0;
     line-height: 1.6;
     opacity: 0.95;
+    padding-top: 0.5rem;
 }
 
 /* Active state enhancements */
 .persona-card.active .persona-avatar {
     background: var(--bs-primary);
     color: var(--bs-light);
+    border-color: var(--bs-light);
 }
 
 .persona-card.active .persona-name {
     color: var(--bs-primary);
 }
 
-/* Mobile responsiveness */
-@media (max-width: 991.98px) {
-    .persona-selector {
-        padding: 1.5rem 0;
-    }
-    
-    .personas-scroll {
-        max-height: 70vh;
-    }
-    
-    .persona-card {
-        padding: 1.5rem;
-        max-width: 100%;
-        gap: 1.25rem;
-    }
-    
-    .persona-avatar {
-        width: 52px;
-        height: 52px;
-        font-size: 1.5rem;
-    }
-    
-    .persona-name {
-        font-size: 1.15rem;
-    }
-    
-    .persona-category {
-        font-size: 0.85rem;
-    }
-    
-    .persona-description {
-        font-size: 0.95rem;
-        line-height: 1.5;
-    }
+.persona-card.active .persona-description {
+    color: var(--bs-body-color);
 }
 
-@media (max-width: 575.98px) {
-    .persona-selector {
-        padding: 1.25rem 0;
-    }
-    
-    .personas-scroll {
-        max-height: 65vh;
-    }
-    
-    .persona-card {
-        padding: 1.25rem;
-        gap: 1rem;
-    }
-    
-    .persona-avatar {
-        width: 48px;
-        height: 48px;
-        font-size: 1.35rem;
-    }
-    
-    .persona-name {
-        font-size: 1.1rem;
-    }
-    
-    .persona-category {
-        font-size: 0.8rem;
-    }
-    
-    .persona-description {
-        font-size: 0.9rem;
-        line-height: 1.5;
-    }
-}
-
-/* Chat Interface */
+/* Enhanced Chat Interface */
 .chat-layout {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    max-height: 100vh;
 }
 
 .chat-header {
     flex: 0 0 auto;
     background: var(--chat-bg);
     border-bottom: 1px solid var(--border-color);
+    padding: 1.5rem 0;
 }
 
 .chat-main {
@@ -220,32 +161,23 @@
     flex-direction: column;
     overflow: hidden;
     position: relative;
+    min-height: 0;
 }
 
 .messages-container {
     flex: 1;
     overflow-y: auto;
-    padding: 1rem;
-}
-
-.input-container {
-    flex: 0 0 auto;
-    padding: 1rem;
-    background: var(--chat-bg);
-    border-top: 1px solid var(--border-color);
-}
-
-.input-wrapper {
-    display: flex;
-    gap: 1rem;
-    align-items: flex-start;
+    padding: 1.5rem;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
 }
 
 .message {
-    margin-bottom: 1rem;
-    padding: 1rem;
-    border-radius: 0.5rem;
-    max-width: 80%;
+    margin-bottom: 1.5rem;
+    padding: 1.25rem;
+    border-radius: 1rem;
+    max-width: 85%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .message-user {
@@ -257,15 +189,77 @@
 .message-ai {
     background: var(--message-bg);
     margin-right: auto;
+    border: 1px solid var(--border-color);
 }
 
-.loading-indicator {
+.message p {
+    margin: 0;
+    line-height: 1.6;
+    font-size: 1.05rem;
+}
+
+.input-container {
+    flex: 0 0 auto;
+    padding: 1.5rem;
+    background: var(--chat-bg);
+    border-top: 1px solid var(--border-color);
+}
+
+.input-wrapper {
     display: flex;
-    justify-content: center;
-    padding: 1rem;
+    gap: 1rem;
+    align-items: flex-start;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-.fade-out {
-    opacity: 0;
-    transition: opacity 0.5s ease;
+/* Mobile Responsiveness */
+@media (max-width: 991.98px) {
+    .persona-card {
+        padding: 1.75rem;
+        gap: 1.5rem;
+        min-height: 140px;
+    }
+    
+    .persona-avatar {
+        width: 56px;
+        height: 56px;
+        font-size: 1.5rem;
+    }
+    
+    .persona-name {
+        font-size: 1.25rem;
+    }
+    
+    .persona-description {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .persona-card {
+        padding: 1.5rem;
+        gap: 1.25rem;
+        min-height: 120px;
+    }
+    
+    .persona-avatar {
+        width: 48px;
+        height: 48px;
+        font-size: 1.35rem;
+    }
+    
+    .persona-name {
+        font-size: 1.15rem;
+    }
+    
+    .persona-description {
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+    
+    .message {
+        max-width: 95%;
+        padding: 1rem;
+    }
 }
