@@ -52,12 +52,11 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                 
                 try:
                     for topic_data in default_topics:
-                        new_topic = Topic(
-                            title=topic_data["title"],
-                            description=topic_data["description"],
-                            category=topic_data["category"],
-                            suggested_by_ai=True
-                        )
+                        new_topic = Topic()
+                        new_topic.title = topic_data["title"]
+                        new_topic.description = topic_data["description"]
+                        new_topic.category = topic_data["category"]
+                        new_topic.suggested_by_ai = True
                         db.session.add(new_topic)
                     
                     db.session.commit()
@@ -123,25 +122,38 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
             initial_role = data['role']
             context = data['context']
             
-            response = dialogue_system.generate_response(initial_role, context)
-            
-            # Create new chat thread
-            new_thread = ChatThread(
-                thread_id=str(datetime.utcnow().timestamp()),
-                context=context
-            )
-            db.session.add(new_thread)
-            
-            # Add initial message
-            initial_message = Message(
-                thread_id=new_thread.id,
-                role=initial_role,
-                content=response
-            )
-            db.session.add(initial_message)
-            
+            # Start a database transaction
             try:
+                # Create new chat thread
+                new_thread = ChatThread()
+                new_thread.thread_id = str(datetime.utcnow().timestamp())
+                new_thread.context = context
+                db.session.add(new_thread)
+                
+                # Flush session to get the new thread ID
+                db.session.flush()
+                
+                # Generate response after we have the thread
+                response = dialogue_system.generate_response(initial_role, context)
+                
+                # Add initial message with the correct thread_id
+                initial_message = Message()
+                initial_message.thread_id = new_thread.id
+                initial_message.role = initial_role
+                initial_message.content = response
+                db.session.add(initial_message)
+                
+                # Commit the transaction
                 db.session.commit()
+                
+                return jsonify({
+                    "status": "success",
+                    "data": {
+                        "thread_id": new_thread.thread_id,
+                        "response": response
+                    }
+                })
+                
             except Exception as e:
                 db.session.rollback()
                 logger.error(f"Database error: {str(e)}")
@@ -150,14 +162,6 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                     "message": "Unable to save chat data. Please try again later.",
                     "error": str(e)
                 }), 500
-            
-            return jsonify({
-                "status": "success",
-                "data": {
-                    "thread_id": new_thread.thread_id,
-                    "response": response
-                }
-            })
             
         except Exception as e:
             logger.error(f"Error starting chat: {str(e)}")
@@ -234,32 +238,40 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                     "status": "error",
                     "message": "Chat thread not found"
                 }), 404
-                
-            response = dialogue_system.generate_layered_response(
-                thread_id, 
-                role, 
-                user_input,
-                conversation_style
-            )
-            
-            # Add user message
-            user_message = Message(
-                thread_id=thread.id,
-                role="user",
-                content=user_input
-            )
-            db.session.add(user_message)
-            
-            # Add AI response
-            ai_message = Message(
-                thread_id=thread.id,
-                role=role,
-                content=response
-            )
-            db.session.add(ai_message)
             
             try:
+                # Generate response
+                response = dialogue_system.generate_layered_response(
+                    thread_id, 
+                    role, 
+                    user_input,
+                    conversation_style
+                )
+                
+                # Add user message
+                user_message = Message()
+                user_message.thread_id = thread.id
+                user_message.role = "user"
+                user_message.content = user_input
+                db.session.add(user_message)
+                
+                # Add AI response
+                ai_message = Message()
+                ai_message.thread_id = thread.id
+                ai_message.role = role
+                ai_message.content = response
+                db.session.add(ai_message)
+                
+                # Commit the transaction
                 db.session.commit()
+                
+                return jsonify({
+                    "status": "success",
+                    "data": {
+                        "response": response
+                    }
+                })
+                
             except Exception as e:
                 db.session.rollback()
                 logger.error(f"Database error: {str(e)}")
@@ -268,13 +280,6 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                     "message": "Unable to save chat messages. Please try again later.",
                     "error": str(e)
                 }), 500
-            
-            return jsonify({
-                "status": "success",
-                "data": {
-                    "response": response
-                }
-            })
             
         except Exception as e:
             logger.error(f"Error continuing chat: {str(e)}")
