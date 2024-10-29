@@ -5,6 +5,7 @@ from visualization import ConversationVisualizer
 from dialogue_system import CommunityDialogueSystem
 import os
 import uuid
+from sqlalchemy.exc import SQLAlchemyError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -100,6 +101,10 @@ def init_routes(app):
             db.session.commit()
 
             return jsonify({"status": "success"})
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            logger.error(f"Database error updating conversation style: {str(e)}")
+            return jsonify({"error": "Database error occurred"}), 500
         except Exception as e:
             logger.error(f"Error updating conversation style: {str(e)}")
             return jsonify({"error": str(e)}), 500
@@ -110,6 +115,7 @@ def init_routes(app):
             data = request.get_json()
             thread_id = str(uuid.uuid4())
             
+            # Create and commit thread first
             thread = ChatThread(
                 thread_id=thread_id,
                 context=data.get('context'),
@@ -120,7 +126,9 @@ def init_routes(app):
                 }
             )
             db.session.add(thread)
+            db.session.commit()
             
+            # Generate response
             response = dialogue_system.generate_response(
                 data['role'],
                 data['context'],
@@ -130,8 +138,9 @@ def init_routes(app):
                 }
             )
             
+            # Create message using thread.id
             message = Message(
-                thread_id=thread.id,
+                thread_id=thread.id,  # Use thread.id here
                 role=data['role'],
                 content=response
             )
@@ -143,6 +152,10 @@ def init_routes(app):
                 "thread_id": thread_id,
                 "response": response
             })
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            logger.error(f"Database error starting dialogue: {str(e)}")
+            return jsonify({"error": "Database error occurred"}), 500
         except Exception as e:
             logger.error(f"Error starting dialogue: {str(e)}")
             return jsonify({"error": str(e)}), 500
@@ -181,6 +194,10 @@ def init_routes(app):
                 "status": "success",
                 "response": response
             })
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            logger.error(f"Database error continuing dialogue: {str(e)}")
+            return jsonify({"error": "Database error occurred"}), 500
         except Exception as e:
             logger.error(f"Error continuing dialogue: {str(e)}")
             return jsonify({"error": str(e)}), 500

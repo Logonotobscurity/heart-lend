@@ -26,8 +26,14 @@ class CommunityDialogueSystem:
             style_instruction = self._get_style_instruction(conversation_style)
             
             messages = [
-                {"role": "system", "content": f"{instruction}\n\n{style_instruction}"},
-                {"role": "user", "content": f"Context: {context}\nBase response: {base_response}\nEnhance this response while maintaining the role's voice and following the conversation style guidance."}
+                {
+                    "role": "system",
+                    "content": f"{instruction}\n\n{style_instruction}"
+                },
+                {
+                    "role": "user",
+                    "content": f"Context: {context}\nBase response: {base_response}\nEnhance this response while maintaining the role's voice and following the conversation style guidance."
+                }
             ]
             
             response = self.openai_client.chat.completions.create(
@@ -37,7 +43,9 @@ class CommunityDialogueSystem:
                 max_tokens=500
             )
             
-            return response.choices[0].message.content
+            if response.choices and response.choices[0].message:
+                return str(response.choices[0].message.content)
+            return base_response
             
         except Exception as e:
             logging.error(f"AI enhancement error: {str(e)}")
@@ -141,8 +149,8 @@ class CommunityDialogueSystem:
                          and insightful tone while drawing from spiritual wisdom.""",
             
             "Techno Sage": """You are Techno Sage, a technology visionary who sees 
-                             the deeper patterns in digital evolution. Maintain a 
-                             precise and innovative voice while exploring technological insights.""",
+                              the deeper patterns in digital evolution. Maintain a 
+                              precise and innovative voice while exploring technological insights.""",
             
             "Musa the Storyweaver": """You are Musa the Storyweaver, a master narrator 
                                       who weaves tales that bridge past and future. 
