@@ -10,6 +10,9 @@ let availablePersonas = [
 let currentPersonaIndex = 0;
 let conversationDirection = 'balanced';
 let conversationFocus = 2;
+let isLoading = false;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000;
 
 // DOM elements
 let messageInput;
@@ -23,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeScrolling();
     initializeMessageHandling();
     initializeDirectionControls();
-    loadTopics();
+    loadTopicsWithRetry();
 });
 
 function initializeUI() {
@@ -33,8 +36,8 @@ function initializeUI() {
     chatMessages = document.getElementById('chat-messages');
     
     if (!messageInput || !sendButton || !chatMessages) {
+        showError('Required UI elements not found. Please refresh the page.');
         console.error('Required UI elements not found');
-        showError('Failed to initialize chat interface');
         return;
     }
 }
@@ -103,15 +106,42 @@ function updateFocusLabel(element, value) {
     }
 }
 
+async function sendMessageWithRetry(data, retries = MAX_RETRIES) {
+    const endpoint = currentThread ? '/api/chat/continue' : '/api/chat/start';
+    
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.message || 'Failed to send message');
+        }
+        
+        if (result.status === 'error') {
+            throw new Error(result.message);
+        }
+        
+        return result.data;
+    } catch (error) {
+        if (retries > 0 && !error.message.includes('thread not found')) {
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            return sendMessageWithRetry(data, retries - 1);
+        }
+        throw error;
+    }
+}
+
 async function sendMessage() {
-    if (!messageInput.value.trim()) return;
-
-    const message = messageInput.value;
-    messageInput.value = '';
-
-    // Add user message to chat
-    addMessage('user', message);
-
+    if (isLoading) return;
+    
+    const message = messageInput.value.trim();
+    if (!message) return;
+    
     // Get next available persona
     const availableRoles = availablePersonas.filter(p => !excludedPersonas.has(p));
     if (availableRoles.length === 0) {
@@ -122,67 +152,68 @@ async function sendMessage() {
     currentPersonaIndex = (currentPersonaIndex + 1) % availableRoles.length;
     const respondingRole = availableRoles[currentPersonaIndex];
 
-    try {
-        const response = await fetch('/api/chat/continue', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                thread_id: currentThread,
-                role: respondingRole,
-                input: message,
-                style: {
-                    direction: conversationDirection,
-                    focus: conversationFocus
-                }
-            })
-        });
+    messageInput.value = '';
+    isLoading = true;
+    addLoadingIndicator();
 
-        const data = await response.json();
-        if (data.error) {
-            showError(data.error);
-            return;
+    try {
+        const requestData = currentThread ? {
+            thread_id: currentThread,
+            role: respondingRole,
+            input: message,
+            style: {
+                direction: conversationDirection,
+                focus: conversationFocus
+            }
+        } : {
+            role: respondingRole,
+            context: message
+        };
+
+        // Add user message to chat
+        addMessage('user', message);
+
+        const response = await sendMessageWithRetry(requestData);
+        
+        if (!currentThread && response.thread_id) {
+            currentThread = response.thread_id;
         }
 
-        addMessage(respondingRole, data.response);
-        
+        addMessage(respondingRole, response.response);
+
     } catch (error) {
         console.error('Error sending message:', error);
-        showError('Failed to send message');
+        showError(error.message || 'Failed to send message. Please try again.');
+    } finally {
+        isLoading = false;
+        removeLoadingIndicator();
     }
 }
 
-function addMessage(role, content) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message message-${role === 'user' ? 'user' : 'ai'}`;
-    
-    if (role !== 'user') {
-        const roleHeader = document.createElement('strong');
-        roleHeader.textContent = role;
-        messageDiv.appendChild(roleHeader);
-    }
-    
-    const contentP = document.createElement('p');
-    contentP.textContent = content;
-    messageDiv.appendChild(contentP);
-    
-    chatMessages.appendChild(messageDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-async function loadTopics() {
+async function loadTopicsWithRetry(retries = MAX_RETRIES) {
     try {
         const response = await fetch('/api/topics');
-        const data = await response.json();
+        const result = await response.json();
         
-        if (data.error) {
-            console.error('Error loading topics:', data.error);
-            return;
+        if (!response.ok) {
+            throw new Error(result.message || 'Failed to load topics');
         }
         
-        updateTopicsList(data.topics);
+        if (result.status === 'error') {
+            throw new Error(result.message);
+        }
+        
+        updateTopicsList(result.data.topics);
         
     } catch (error) {
         console.error('Error loading topics:', error);
+        
+        if (retries > 0) {
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            return loadTopicsWithRetry(retries - 1);
+        }
+        
+        showError('Unable to load topics. Please refresh the page.');
     }
 }
 
@@ -191,6 +222,16 @@ function updateTopicsList(topics) {
     if (!topicsList) return;
     
     topicsList.innerHTML = '';
+    
+    if (!topics || topics.length === 0) {
+        topicsList.innerHTML = `
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                No topics available at the moment.
+            </div>`;
+        return;
+    }
+    
     topics.forEach(topic => {
         const topicButton = document.createElement('button');
         topicButton.className = 'topic-button';
@@ -213,8 +254,17 @@ function selectTopic(topic) {
     event.currentTarget.classList.add('active');
     
     // Update active topics display
+    updateActiveTopics(topic);
+}
+
+function updateActiveTopics(topic) {
     const activeTopics = document.getElementById('active-topics');
-    if (activeTopics) {
+    if (!activeTopics) return;
+    
+    const existingChip = Array.from(activeTopics.children)
+        .find(chip => chip.textContent === topic.title);
+        
+    if (!existingChip) {
         const topicChip = document.createElement('div');
         topicChip.className = 'topic-chip';
         topicChip.textContent = topic.title;
@@ -222,15 +272,58 @@ function selectTopic(topic) {
     }
 }
 
+function addMessage(role, content) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message message-${role === 'user' ? 'user' : 'ai'}`;
+    
+    if (role !== 'user') {
+        const roleHeader = document.createElement('strong');
+        roleHeader.textContent = role;
+        messageDiv.appendChild(roleHeader);
+    }
+    
+    const contentP = document.createElement('p');
+    contentP.textContent = content;
+    messageDiv.appendChild(contentP);
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function addLoadingIndicator() {
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'loading-indicator';
+    loadingDiv.innerHTML = `
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    `;
+    chatMessages.appendChild(loadingDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function removeLoadingIndicator() {
+    const loadingIndicator = document.querySelector('.loading-indicator');
+    if (loadingIndicator) {
+        loadingIndicator.remove();
+    }
+}
+
 function showError(message) {
     const errorDiv = document.createElement('div');
     errorDiv.className = 'message message-system';
     errorDiv.innerHTML = `
-        <strong>Error</strong>
+        <strong><i class="bi bi-exclamation-triangle me-2"></i>Error</strong>
         <p>${message}</p>
     `;
     chatMessages.appendChild(errorDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // Remove error message after 5 seconds
+    setTimeout(() => {
+        errorDiv.classList.add('fade-out');
+        setTimeout(() => errorDiv.remove(), 500);
+    }, 5000);
 }
 
 function toggleSidebar() {

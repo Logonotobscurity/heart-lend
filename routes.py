@@ -52,11 +52,12 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                 
                 try:
                     for topic_data in default_topics:
-                        new_topic = Topic()
-                        new_topic.title = topic_data["title"]
-                        new_topic.description = topic_data["description"]
-                        new_topic.category = topic_data["category"]
-                        new_topic.suggested_by_ai = True
+                        new_topic = Topic(
+                            title=topic_data["title"],
+                            description=topic_data["description"],
+                            category=topic_data["category"],
+                            suggested_by_ai=True
+                        )
                         db.session.add(new_topic)
                     
                     db.session.commit()
@@ -64,77 +65,175 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                 except Exception as e:
                     db.session.rollback()
                     logger.error(f"Database error creating default topics: {str(e)}")
-                    return jsonify({"error": "Database error"}), 500
+                    return jsonify({
+                        "status": "error",
+                        "message": "Unable to create default topics. Please try again later.",
+                        "error": str(e)
+                    }), 500
             
             return jsonify({
-                "topics": [{
-                    "id": topic.id,
-                    "title": topic.title,
-                    "description": topic.description,
-                    "category": topic.category
-                } for topic in topics]
+                "status": "success",
+                "data": {
+                    "topics": [{
+                        "id": topic.id,
+                        "title": topic.title,
+                        "description": topic.description,
+                        "category": topic.category
+                    } for topic in topics]
+                }
             })
             
         except Exception as e:
             logger.error(f"Error fetching topics: {str(e)}")
-            return jsonify({"error": str(e)}), 500
+            return jsonify({
+                "status": "error",
+                "message": "Unable to fetch topics. Please try again later.",
+                "error": str(e)
+            }), 500
     
     @api.route('/api/chat/start', methods=['POST'])
     def start_chat():
         try:
             data = request.get_json()
-            initial_role = data.get('role')
-            context = data.get('context')
+            if not data:
+                return jsonify({
+                    "status": "error",
+                    "message": "Invalid request format. Please provide JSON data.",
+                }), 400
+
+            # Validate required parameters
+            required_params = {
+                'role': str,
+                'context': str
+            }
             
-            if not initial_role or not context:
-                return jsonify({"error": "Missing required parameters"}), 400
+            for param, param_type in required_params.items():
+                value = data.get(param)
+                if not value:
+                    return jsonify({
+                        "status": "error",
+                        "message": f"Missing required parameter: {param}"
+                    }), 400
+                if not isinstance(value, param_type):
+                    return jsonify({
+                        "status": "error",
+                        "message": f"Invalid type for parameter {param}. Expected {param_type.__name__}"
+                    }), 400
+            
+            initial_role = data['role']
+            context = data['context']
             
             response = dialogue_system.generate_response(initial_role, context)
             
             # Create new chat thread
-            new_thread = ChatThread()
-            new_thread.thread_id = str(datetime.utcnow().timestamp())
-            new_thread.context = context
+            new_thread = ChatThread(
+                thread_id=str(datetime.utcnow().timestamp()),
+                context=context
+            )
             db.session.add(new_thread)
             
             # Add initial message
-            new_message = Message()
-            new_message.thread = new_thread
-            new_message.role = initial_role
-            new_message.content = response
-            db.session.add(new_message)
+            initial_message = Message(
+                thread_id=new_thread.id,
+                role=initial_role,
+                content=response
+            )
+            db.session.add(initial_message)
             
             try:
                 db.session.commit()
             except Exception as e:
                 db.session.rollback()
                 logger.error(f"Database error: {str(e)}")
-                return jsonify({"error": "Database error"}), 500
+                return jsonify({
+                    "status": "error",
+                    "message": "Unable to save chat data. Please try again later.",
+                    "error": str(e)
+                }), 500
             
             return jsonify({
-                "thread_id": new_thread.thread_id,
-                "response": response
+                "status": "success",
+                "data": {
+                    "thread_id": new_thread.thread_id,
+                    "response": response
+                }
             })
             
         except Exception as e:
             logger.error(f"Error starting chat: {str(e)}")
-            return jsonify({"error": str(e)}), 500
+            return jsonify({
+                "status": "error",
+                "message": "Unable to start chat. Please try again later.",
+                "error": str(e)
+            }), 500
     
     @api.route('/api/chat/continue', methods=['POST'])
     def continue_chat():
         try:
             data = request.get_json()
-            thread_id = data.get('thread_id')
-            role = data.get('role')
-            user_input = data.get('input')
-            conversation_style = data.get('style')
+            if not data:
+                return jsonify({
+                    "status": "error",
+                    "message": "Invalid request format. Please provide JSON data."
+                }), 400
+
+            # Validate required parameters
+            required_params = {
+                'thread_id': str,
+                'role': str,
+                'input': str
+            }
             
-            if not all([thread_id, role, user_input]):
-                return jsonify({"error": "Missing required parameters"}), 400
+            for param, param_type in required_params.items():
+                value = data.get(param)
+                if not value:
+                    return jsonify({
+                        "status": "error",
+                        "message": f"Missing required parameter: {param}"
+                    }), 400
+                if not isinstance(value, param_type):
+                    return jsonify({
+                        "status": "error",
+                        "message": f"Invalid type for parameter {param}. Expected {param_type.__name__}"
+                    }), 400
+            
+            thread_id = data['thread_id']
+            role = data['role']
+            user_input = data['input']
+            conversation_style = data.get('style', {})
+            
+            # Validate conversation style if provided
+            if conversation_style:
+                if not isinstance(conversation_style, dict):
+                    return jsonify({
+                        "status": "error",
+                        "message": "Invalid conversation style format"
+                    }), 400
                 
+                if 'direction' in conversation_style and conversation_style['direction'] not in ['deep', 'broad', 'balanced']:
+                    return jsonify({
+                        "status": "error",
+                        "message": "Invalid conversation direction. Must be 'deep', 'broad', or 'balanced'"
+                    }), 400
+                
+                if 'focus' in conversation_style:
+                    try:
+                        focus = float(conversation_style['focus'])
+                        if not (1.0 <= focus <= 3.0):
+                            raise ValueError
+                    except ValueError:
+                        return jsonify({
+                            "status": "error",
+                            "message": "Invalid focus value. Must be a number between 1.0 and 3.0"
+                        }), 400
+
+            # Find thread
             thread = ChatThread.query.filter_by(thread_id=thread_id).first()
             if not thread:
-                return jsonify({"error": "Thread not found"}), 404
+                return jsonify({
+                    "status": "error",
+                    "message": "Chat thread not found"
+                }), 404
                 
             response = dialogue_system.generate_layered_response(
                 thread_id, 
@@ -144,17 +243,19 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
             )
             
             # Add user message
-            user_message = Message()
-            user_message.thread = thread
-            user_message.role = "user"
-            user_message.content = user_input
+            user_message = Message(
+                thread_id=thread.id,
+                role="user",
+                content=user_input
+            )
             db.session.add(user_message)
             
             # Add AI response
-            ai_message = Message()
-            ai_message.thread = thread
-            ai_message.role = role
-            ai_message.content = response
+            ai_message = Message(
+                thread_id=thread.id,
+                role=role,
+                content=response
+            )
             db.session.add(ai_message)
             
             try:
@@ -162,14 +263,25 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
             except Exception as e:
                 db.session.rollback()
                 logger.error(f"Database error: {str(e)}")
-                return jsonify({"error": "Database error"}), 500
+                return jsonify({
+                    "status": "error",
+                    "message": "Unable to save chat messages. Please try again later.",
+                    "error": str(e)
+                }), 500
             
             return jsonify({
-                "response": response
+                "status": "success",
+                "data": {
+                    "response": response
+                }
             })
             
         except Exception as e:
             logger.error(f"Error continuing chat: {str(e)}")
-            return jsonify({"error": str(e)}), 500
+            return jsonify({
+                "status": "error",
+                "message": "Unable to continue chat. Please try again later.",
+                "error": str(e)
+            }), 500
             
     return api
