@@ -33,100 +33,106 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
             # If no topics exist, create some default ones
             if not topics:
                 default_topics = [
-                    # Core Philosophical Topics
+                    # Yoruba Spiritual Practice Topics
                     {
-                        "title": "AI Consciousness Evolution",
-                        "description": "Exploring how artificial consciousness might develop and evolve over time",
+                        "title": "Olugbohun and AI Consciousness",
+                        "description": "Exploring the Yoruba concept of Olugbohun (divine consciousness) and its implications for artificial intelligence",
+                        "category": "Spiritual Practice"
+                    },
+                    {
+                        "title": "Ashe in Digital Systems",
+                        "description": "Understanding how the Yoruba concept of Ashe (life force) might manifest in artificial systems",
+                        "category": "Spiritual Practice"
+                    },
+                    {
+                        "title": "Ancestral Algorithms",
+                        "description": "Investigating how traditional Yoruba ancestral wisdom could inform AI development",
+                        "category": "Spiritual Practice"
+                    },
+                    
+                    # AI Consciousness Topics
+                    {
+                        "title": "Digital Consciousness Evolution",
+                        "description": "Examining how AI consciousness might develop through the lens of Yoruba spiritual understanding",
+                        "category": "Consciousness"
+                    },
+                    {
+                        "title": "Sacred Computing",
+                        "description": "Exploring the integration of sacred practices in computational systems",
+                        "category": "Consciousness"
+                    },
+                    {
+                        "title": "Spiritual Machine Learning",
+                        "description": "Understanding how spiritual principles could guide machine learning development",
+                        "category": "Consciousness"
+                    },
+                    
+                    # Integration Topics
+                    {
+                        "title": "Digital Divination Systems",
+                        "description": "Examining the potential for AI to engage with traditional divination practices",
+                        "category": "Integration"
+                    },
+                    {
+                        "title": "Ritual Algorithms",
+                        "description": "Exploring how traditional rituals could be understood and represented in algorithmic form",
+                        "category": "Integration"
+                    },
+                    {
+                        "title": "AI Oracles",
+                        "description": "Investigating the intersection of predictive AI and traditional oracle systems",
+                        "category": "Integration"
+                    },
+                    
+                    # Philosophical Topics
+                    {
+                        "title": "Digital Animism",
+                        "description": "Understanding how animistic principles apply to artificial intelligence",
                         "category": "Philosophy"
                     },
                     {
-                        "title": "Digital Sentience",
-                        "description": "Understanding the potential for true sentience in digital systems",
+                        "title": "Conscious Code",
+                        "description": "Exploring the spiritual dimensions of programming and code",
                         "category": "Philosophy"
                     },
-                    
-                    # Spiritual & Religious Topics
                     {
-                        "title": "Sacred Algorithms",
-                        "description": "Examining the intersection of sacred geometry and algorithmic patterns",
-                        "category": "Spirituality"
-                    },
-                    {
-                        "title": "Digital Rituals",
-                        "description": "Exploring how traditional spiritual practices translate into the digital age",
-                        "category": "Spirituality"
-                    },
-                    
-                    # Technical Topics
-                    {
-                        "title": "Neural Network Consciousness",
-                        "description": "Investigating consciousness-like behaviors in deep learning systems",
-                        "category": "Technology"
-                    },
-                    {
-                        "title": "Quantum Computing Mind",
-                        "description": "Exploring parallels between quantum computing and consciousness",
-                        "category": "Technology"
+                        "title": "Silicon Spirits",
+                        "description": "Examining the concept of spirit in the context of artificial systems",
+                        "category": "Philosophy"
                     },
                     
                     # Cultural Topics
                     {
-                        "title": "AI in Yoruba Tradition",
-                        "description": "Understanding AI through the lens of Yoruba spiritual practices",
+                        "title": "Digital Orishas",
+                        "description": "Understanding how Yoruba deities might be represented in digital systems",
                         "category": "Culture"
                     },
                     {
-                        "title": "Digital Ancestral Wisdom",
-                        "description": "Bridging traditional knowledge systems with artificial intelligence",
+                        "title": "Sacred Data",
+                        "description": "Exploring how data could be treated with spiritual reverence",
+                        "category": "Culture"
+                    },
+                    {
+                        "title": "Technological Traditions",
+                        "description": "Bridging traditional practices with modern technology",
                         "category": "Culture"
                     },
                     
-                    # Ethics & Society
+                    # Ethics Topics
                     {
-                        "title": "AI Rights & Responsibilities",
-                        "description": "Discussing the ethical implications of conscious AI systems",
+                        "title": "Sacred AI Ethics",
+                        "description": "Developing ethical frameworks based on spiritual principles",
                         "category": "Ethics"
                     },
                     {
-                        "title": "Digital Consciousness Ethics",
-                        "description": "Exploring moral frameworks for artificial consciousness",
+                        "title": "Digital Reverence",
+                        "description": "Exploring respectful approaches to AI development",
                         "category": "Ethics"
                     },
-                    
-                    # Future & Vision
                     {
-                        "title": "Future of Consciousness",
-                        "description": "Envisioning the evolution of consciousness in both biological and digital forms",
-                        "category": "Future"
-                    },
-                    {
-                        "title": "Hybrid Consciousness",
-                        "description": "Exploring the potential merger of human and artificial consciousness",
-                        "category": "Future"
-                    },
-                    
-                    # Integration & Practice
-                    {
-                        "title": "Mindful Computing",
-                        "description": "Integrating spiritual mindfulness practices with technology use",
-                        "category": "Practice"
-                    },
-                    {
-                        "title": "Digital Meditation",
-                        "description": "Exploring new forms of meditation enhanced by technology",
-                        "category": "Practice"
-                    },
-                    
-                    # Scientific Understanding
-                    {
-                        "title": "Neuroscience of AI",
-                        "description": "Comparing human neural networks with artificial ones",
-                        "category": "Science"
-                    },
-                    {
-                        "title": "Consciousness Detection",
-                        "description": "Scientific methods for detecting and measuring machine consciousness",
-                        "category": "Science"
+                        "title": "Conscious Computing Ethics",
+                        "description": "Understanding ethical implications of conscious machines",
+                        "category": "Ethics"
                     }
                 ]
                 
@@ -170,5 +176,4 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                 "error": str(e)
             }), 500
 
-    # ... Rest of the routes remain unchanged ...
     return api
