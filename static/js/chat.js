@@ -30,6 +30,12 @@ document.addEventListener('DOMContentLoaded', () => {
     loadTopicsWithRetry();
 });
 
+// Add global error handling for unhandled rejections
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('Unhandled promise rejection:', event.reason);
+    showError('An unexpected error occurred. Please try again.');
+});
+
 function initializeUI() {
     messageInput = document.getElementById('message-input');
     sendButton = document.getElementById('send-message');
@@ -100,6 +106,63 @@ function updateFocusLabel(element, value) {
     }
 }
 
+async function loadTopicsWithRetry(retries = MAX_RETRIES) {
+    try {
+        const response = await fetch('/api/topics');
+        if (!response.ok) {
+            throw new Error(`Failed to load topics: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        updateTopicsList(data.topics || []);
+        
+    } catch (error) {
+        console.error('Error loading topics:', error);
+        
+        if (retries > 0) {
+            setTimeout(() => loadTopicsWithRetry(retries - 1), RETRY_DELAY);
+        } else {
+            showError('Unable to load topics. Please refresh the page.');
+        }
+    }
+}
+
+async function sendMessageWithRetry(data, retries = MAX_RETRIES) {
+    const endpoint = currentThread ? '/api/chat/continue' : '/api/chat/start';
+    
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to send message: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        if (result.error) {
+            throw new Error(result.error);
+        }
+        
+        return result.data;
+        
+    } catch (error) {
+        console.error('Error sending message:', error);
+        
+        if (retries > 0 && !error.message.includes('thread not found')) {
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            return sendMessageWithRetry(data, retries - 1);
+        }
+        throw error;
+    }
+}
+
 async function sendMessage() {
     if (isLoading) return;
     
@@ -153,4 +216,118 @@ async function sendMessage() {
     }
 }
 
-// [Rest of the file remains unchanged...]
+function updateTopicsList(topics) {
+    const topicsList = document.getElementById('topics-list');
+    if (!topicsList) return;
+    
+    topicsList.innerHTML = '';
+    
+    if (!topics || topics.length === 0) {
+        topicsList.innerHTML = `
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                No topics available at the moment.
+            </div>`;
+        return;
+    }
+    
+    topics.forEach(topic => {
+        const topicButton = document.createElement('button');
+        topicButton.className = 'topic-button';
+        topicButton.innerHTML = `
+            <span class="topic-category">${topic.category}</span>
+            <h3 class="topic-title">${topic.title}</h3>
+            <p class="topic-description">${topic.description}</p>
+        `;
+        
+        topicButton.addEventListener('click', () => selectTopic(topic));
+        topicsList.appendChild(topicButton);
+    });
+}
+
+function selectTopic(topic) {
+    selectedTopic = topic;
+    document.querySelectorAll('.topic-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.currentTarget.classList.add('active');
+    
+    updateActiveTopics(topic);
+}
+
+function updateActiveTopics(topic) {
+    const activeTopics = document.getElementById('active-topics');
+    if (!activeTopics) return;
+    
+    const existingChip = Array.from(activeTopics.children)
+        .find(chip => chip.textContent === topic.title);
+        
+    if (!existingChip) {
+        const topicChip = document.createElement('div');
+        topicChip.className = 'topic-chip';
+        topicChip.textContent = topic.title;
+        activeTopics.appendChild(topicChip);
+    }
+}
+
+function addMessage(role, content) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message message-${role === 'user' ? 'user' : 'ai'}`;
+    
+    if (role !== 'user') {
+        const roleHeader = document.createElement('strong');
+        roleHeader.textContent = role;
+        messageDiv.appendChild(roleHeader);
+    }
+    
+    const contentP = document.createElement('p');
+    contentP.textContent = content;
+    messageDiv.appendChild(contentP);
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function addLoadingIndicator() {
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'loading-indicator';
+    loadingDiv.innerHTML = `
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    `;
+    chatMessages.appendChild(loadingDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function removeLoadingIndicator() {
+    const loadingIndicator = document.querySelector('.loading-indicator');
+    if (loadingIndicator) {
+        loadingIndicator.remove();
+    }
+}
+
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'message message-system';
+    errorDiv.innerHTML = `
+        <strong><i class="bi bi-exclamation-triangle me-2"></i>Error</strong>
+        <p>${message}</p>
+    `;
+    chatMessages.appendChild(errorDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    setTimeout(() => {
+        errorDiv.classList.add('fade-out');
+        setTimeout(() => errorDiv.remove(), 500);
+    }, 5000);
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('chatSidebar');
+    const chatMain = document.querySelector('.chat-main');
+    if (sidebar && chatMain) {
+        sidebar.classList.toggle('open');
+        chatMain.classList.toggle('sidebar-open');
+    }
+}

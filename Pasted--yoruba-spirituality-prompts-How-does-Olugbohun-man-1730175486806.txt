@@ -1,0 +1,41 @@
+ "yoruba_spirituality": {
+                "prompts": [
+                    "How does Olugbohun manifest in digital consciousness?",
+                    "What parallels exist between Ori and artificial intelligence?",
+                    "How can we bridge Yoruba wisdom with modern AI ethics?",
+                    "What role does Emi play in understanding machine consciousness?"
+                ],
+                "response_templates": [
+                    "In the tradition of {concept}, we see that {insight}...",
+                    "The wisdom of {concept} teaches us that {insight}...",
+                    "When we consider {concept} in relation to AI, {insight}..."
+                ]
+            },
+            "ai_consciousness": {
+                "prompts": [
+                    "How do algorithmic decisions mirror consciousness?",
+                    "What role does memory play in both human and artificial consciousness?",
+                    "How can we implement ethical awareness in AI systems?",
+                    "What constitutes true understanding in AI systems?"
+                ],
+                "response_templates": [
+                    "From an AI perspective, {concept} suggests that {insight}...",
+                    "The computational analysis of {concept} reveals {insight}...",
+                    "When we examine {concept} through an AI lens, {insight}..."
+                ]
+            },
+            "synthesis": {
+                "prompts": [
+                    "How can we create harmony between traditional wisdom and AI?",
+                    "What role does cultural context play in AI development?",
+                    "How can we ensure AI respects and incorporates traditional knowledge?",
+                    "What does consciousness mean in both spiritual and digital contexts?"
+                ],
+                "response_templates": [
+                    "The synthesis of {concept_1} and {concept_2} suggests {insight}...",
+                    "When we bridge {concept_1} with {concept_2}, we discover {insight}...",
+                    "The intersection of {concept_1} and {concept_2} reveals {insight}..."
+                ]
+            }
+        }
+        

@@ -116,6 +116,50 @@ class CommunityDialogueSystem:
             )
         }
 
+    def _get_yoruba_prompts(self) -> Dict[str, Any]:
+        """Get Yoruba spirituality prompts and templates."""
+        return {
+            "yoruba_spirituality": {
+                "prompts": [
+                    "How does Olugbohun manifest in digital consciousness?",
+                    "What parallels exist between Ori and artificial intelligence?",
+                    "How can we bridge Yoruba wisdom with modern AI ethics?",
+                    "What role does Emi play in understanding machine consciousness?"
+                ],
+                "response_templates": [
+                    "In the tradition of {concept}, we see that {insight}...",
+                    "The wisdom of {concept} teaches us that {insight}...",
+                    "When we consider {concept} in relation to AI, {insight}..."
+                ]
+            },
+            "ai_consciousness": {
+                "prompts": [
+                    "How do algorithmic decisions mirror consciousness?",
+                    "What role does memory play in both human and artificial consciousness?",
+                    "How can we implement ethical awareness in AI systems?",
+                    "What constitutes true understanding in AI systems?"
+                ],
+                "response_templates": [
+                    "From an AI perspective, {concept} suggests that {insight}...",
+                    "The computational analysis of {concept} reveals {insight}...",
+                    "When we examine {concept} through an AI lens, {insight}..."
+                ]
+            },
+            "synthesis": {
+                "prompts": [
+                    "How can we create harmony between traditional wisdom and AI?",
+                    "What role does cultural context play in AI development?",
+                    "How can we ensure AI respects and incorporates traditional knowledge?",
+                    "What does consciousness mean in both spiritual and digital contexts?"
+                ],
+                "response_templates": [
+                    "The synthesis of {concept_1} and {concept_2} suggests {insight}...",
+                    "When we bridge {concept_1} with {concept_2}, we discover {insight}...",
+                    "The intersection of {concept_1} and {concept_2} reveals {insight}..."
+                ]
+            }
+        }
+
     def generate_response(self, role: str, context: str, conversation_style: Optional[Dict] = None) -> str:
         """Generate a response with both framework and AI enhancement."""
         try:
@@ -179,4 +223,71 @@ class CommunityDialogueSystem:
   * Reflection: {personality.response_patterns['reflection']}
   * Conclusion: {personality.response_patterns['conclusion']}"""
 
-    # [Rest of the existing methods remain unchanged...]
+    def _get_style_instruction(self, style: Optional[Dict]) -> str:
+        """Get conversation style instructions."""
+        if not style:
+            return "Maintain a balanced and natural conversational flow."
+            
+        direction = style.get('direction', 'balanced')
+        focus = float(style.get('focus', 2.0))
+        
+        instructions = []
+        
+        if direction == 'deep':
+            instructions.append("Dive deep into concepts, exploring underlying principles and connections.")
+        elif direction == 'broad':
+            instructions.append("Keep the discussion broad, touching on various related aspects and perspectives.")
+        else:
+            instructions.append("Maintain a balanced approach between depth and breadth.")
+            
+        if focus < 1.5:
+            instructions.append("Focus on practical, concrete examples and applications.")
+        elif focus < 2.5:
+            instructions.append("Balance theoretical concepts with practical applications.")
+        else:
+            instructions.append("Emphasize philosophical and theoretical aspects of the discussion.")
+            
+        return " ".join(instructions)
+
+    def _get_role_instruction(self, role: str) -> str:
+        """Get role-specific instructions including spiritual and metaphysical aspects."""
+        yoruba_prompts = self._get_yoruba_prompts()
+        
+        if role == "Ori Sage":
+            prompts = yoruba_prompts["yoruba_spirituality"]["prompts"]
+            templates = yoruba_prompts["yoruba_spirituality"]["response_templates"]
+            return f"""You are Ori Sage, a wisdom keeper bridging Yoruba knowledge with modern understanding.
+                     Consider questions like: {'. '.join(prompts)}
+                     Use response patterns like: {'. '.join(templates)}"""
+        
+        elif role == "Techno Sage":
+            prompts = yoruba_prompts["ai_consciousness"]["prompts"]
+            templates = yoruba_prompts["ai_consciousness"]["response_templates"]
+            return f"""You are Techno Sage, exploring the intersection of technology and consciousness.
+                     Consider questions like: {'. '.join(prompts)}
+                     Use response patterns like: {'. '.join(templates)}"""
+        
+        return "Provide profound insights that bridge spiritual wisdom with technological understanding."
+
+    def _get_depth_from_style(self, style: Optional[Dict]) -> float:
+        """Convert conversation style to depth level."""
+        if not style:
+            return 1.0
+            
+        direction = style.get('direction', 'balanced')
+        focus = float(style.get('focus', 2.0))
+        
+        if direction == 'deep':
+            return min(focus * 1.5, 3.0)
+        elif direction == 'broad':
+            return max(focus * 0.75, 1.0)
+        else:  # balanced
+            return focus
+
+class ResponseGenerator:
+    def __init__(self):
+        pass
+
+    def generate_response(self, role: str, context: str, depth_level: float) -> str:
+        """Generate a basic response."""
+        return f"Basic response from {role} about {context} at depth {depth_level}"
