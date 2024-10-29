@@ -39,59 +39,11 @@ class AppConfig:
         """Create configuration from environment variables"""
         return cls(
             SECRET_KEY=os.getenv('FLASK_SECRET_KEY', 'default_secret_key'),
-            DATABASE_URL=os.getenv('DATABASE_URL', 'sqlite:///app.db'),
+            DATABASE_URL=os.getenv('DATABASE_URL'),
             OPENAI_API_KEY=os.getenv('OPENAI_API_KEY'),
             DEBUG=os.getenv('FLASK_DEBUG', '0').lower() in ('1', 'true'),
             TESTING=os.getenv('FLASK_TESTING', '0').lower() in ('1', 'true')
         )
-
-class DatabaseConfig:
-    """Database configuration settings"""
-    @staticmethod
-    def get_config() -> Dict[str, Any]:
-        return {
-            "SQLALCHEMY_DATABASE_URI": AppConfig.from_env().DATABASE_URL,
-            "SQLALCHEMY_TRACK_MODIFICATIONS": False,
-            "SQLALCHEMY_ENGINE_OPTIONS": {
-                "pool_recycle": 300,
-                "pool_pre_ping": True,
-                "pool_size": 10,
-                "max_overflow": 20,
-                "pool_timeout": 30
-            }
-        }
-
-def configure_app(app: Flask, config: AppConfig) -> None:
-    """Configure Flask application"""
-    # Basic configuration
-    app.config['SECRET_KEY'] = config.SECRET_KEY
-    app.config['DEBUG'] = config.DEBUG
-    app.config['TESTING'] = config.TESTING
-
-    # Database configuration
-    app.config.update(DatabaseConfig.get_config())
-
-    # Additional security headers
-    @app.after_request
-    def add_security_headers(response):
-        response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
-        response.headers['X-XSS-Protection'] = '1; mode=block'
-        return response
-
-def initialize_extensions(app: Flask) -> None:
-    """Initialize Flask extensions"""
-    # Initialize database
-    db.init_app(app)
-
-    # Initialize CORS
-    CORS(app, resources={
-        r"/api/*": {
-            "origins": os.getenv('CORS_ORIGINS', '*').split(','),
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"]
-        }
-    })
 
 def create_app(config: AppConfig = None) -> Flask:
     """Application factory function"""
@@ -103,22 +55,29 @@ def create_app(config: AppConfig = None) -> Flask:
         if config is None:
             config = AppConfig.from_env()
 
-        # Configure application
-        configure_app(app, config)
+        # Basic configuration
+        app.config['SECRET_KEY'] = config.SECRET_KEY
+        app.config['DEBUG'] = config.DEBUG
+        app.config['TESTING'] = config.TESTING
+        app.config['SQLALCHEMY_DATABASE_URI'] = config.DATABASE_URL
+        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+            "pool_recycle": 300,
+            "pool_pre_ping": True
+        }
 
-        # Initialize extensions
-        initialize_extensions(app)
+        # Initialize CORS
+        CORS(app)
 
-        # Verify required environment variables
-        if not config.OPENAI_API_KEY:
-            raise ValueError("OpenAI API key is required")
+        # Initialize database
+        db.init_app(app)
 
         # Initialize dialogue system
         dialogue_system = CommunityDialogueSystem(config.OPENAI_API_KEY)
 
         # Register blueprints
         api_blueprint = create_api_blueprint(dialogue_system)
-        app.register_blueprint(api_blueprint, url_prefix='/api')
+        app.register_blueprint(api_blueprint)  # Remove url_prefix to serve routes at root
 
         # Create database tables
         with app.app_context():
@@ -131,37 +90,16 @@ def create_app(config: AppConfig = None) -> Flask:
         logger.error(f"Error creating application: {str(e)}")
         raise
 
-def init_database(app: Flask) -> None:
-    """Initialize database with retry mechanism"""
-    max_retries = 3
-    retry_count = 0
-
-    while retry_count < max_retries:
-        try:
-            with app.app_context():
-                db.create_all()
-                logger.info("Database tables created successfully")
-                break
-        except Exception as e:
-            retry_count += 1
-            logger.error(f"Database initialization attempt {retry_count} failed: {str(e)}")
-            if retry_count == max_retries:
-                raise
-            time.sleep(2 ** retry_count)  # Exponential backoff
-
 if __name__ == "__main__":
     try:
         # Create and configure application
         config = AppConfig.from_env()
         app = create_app(config)
 
-        # Initialize database with retry mechanism
-        init_database(app)
-
         # Run application
         app.run(
-            host=os.getenv('FLASK_HOST', '0.0.0.0'),
-            port=int(os.getenv('FLASK_PORT', 5000)),
+            host='0.0.0.0',
+            port=5000,
             debug=config.DEBUG
         )
 

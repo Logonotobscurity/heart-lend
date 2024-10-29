@@ -12,8 +12,12 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "aiohttp>=3.10.10",
     "networkx",
-    "d3",
     "sqlalchemy",
     "flask-cors",
     "python-time",
+    "requests",
+    "pyyaml",
+    "gunicorn==23.0.0",
+    "uvicorn-worker==0.2.0",
+    "pytest-isort==4.0.0",
 ]
