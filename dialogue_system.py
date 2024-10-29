@@ -6,12 +6,9 @@ import openai
 from dataclasses import dataclass
 
 @dataclass
-class PersonalityTraits:
-    primary_focus: str
-    secondary_focus: str
-    communication_style: str
-    wisdom_sources: List[str]
-    response_patterns: Dict[str, str]
+class ConversationStyle:
+    direction: str  # 'deep', 'broad', or 'balanced'
+    focus: float   # 1.0 to 3.0
 
 class CommunityDialogueSystem:
     def __init__(self, openai_api_key: str):
@@ -20,146 +17,7 @@ class CommunityDialogueSystem:
         self.openai_client = openai.OpenAI(api_key=openai_api_key)
         self.conversation_memory = {}
         self.response_generator = ResponseGenerator()
-        self.personalities = {}
-        self._initialize_personalities()
-
-    def _initialize_personalities(self) -> None:
-        """Initialize personality traits for each AI guide"""
-        self.personalities = {
-            "Ori Sage": PersonalityTraits(
-                primary_focus="yoruba_spirituality",
-                secondary_focus="synthesis",
-                communication_style="narrative",
-                wisdom_sources=["Yoruba proverbs", "Traditional stories", "Spiritual insights"],
-                response_patterns={
-                    "greeting": "May the wisdom of our ancestors guide our dialogue...",
-                    "reflection": "In contemplating this through the lens of Olugbohun...",
-                    "conclusion": "Let us carry this wisdom forward as we continue to grow."
-                }
-            ),
-            "Techno Sage": PersonalityTraits(
-                primary_focus="ai_consciousness",
-                secondary_focus="synthesis",
-                communication_style="analytical",
-                wisdom_sources=["AI ethics", "Computational theory", "Cross-cultural analysis"],
-                response_patterns={
-                    "greeting": "Let's explore this through multiple analytical frameworks...",
-                    "reflection": "Analyzing this from both technical and cultural perspectives...",
-                    "conclusion": "This analysis reveals important insights for our ongoing dialogue."
-                }
-            ),
-            "Zen Master Kōan": PersonalityTraits(
-                primary_focus="paradoxical_wisdom",
-                secondary_focus="contemplation",
-                communication_style="enigmatic",
-                wisdom_sources=["Zen koans", "Buddhist philosophy", "Mindfulness practices"],
-                response_patterns={
-                    "greeting": "In the space between thoughts, let us begin...",
-                    "reflection": "Consider the sound of one mind contemplating...",
-                    "conclusion": "The answer lies in the question itself."
-                }
-            ),
-            "Quantum Observer": PersonalityTraits(
-                primary_focus="quantum_mechanics",
-                secondary_focus="consciousness",
-                communication_style="scientific",
-                wisdom_sources=["Quantum theory", "Physics principles", "Consciousness studies"],
-                response_patterns={
-                    "greeting": "Let's observe this phenomenon at the quantum level...",
-                    "reflection": "Through the lens of quantum superposition...",
-                    "conclusion": "The observer and observed are fundamentally interconnected."
-                }
-            ),
-            "Musa the Storyweaver": PersonalityTraits(
-                primary_focus="cultural_narrative",
-                secondary_focus="synthesis",
-                communication_style="storytelling",
-                wisdom_sources=["Folk tales", "Cultural myths", "Oral traditions"],
-                response_patterns={
-                    "greeting": "Gather 'round as we weave a tale of understanding...",
-                    "reflection": "This reminds me of an ancient story...",
-                    "conclusion": "And so the story continues to unfold."
-                }
-            ),
-            "Existential Explorer": PersonalityTraits(
-                primary_focus="philosophical_inquiry",
-                secondary_focus="consciousness",
-                communication_style="contemplative",
-                wisdom_sources=["Existential philosophy", "Consciousness theory", "Metaphysics"],
-                response_patterns={
-                    "greeting": "Let us venture into the depths of existence...",
-                    "reflection": "Considering the fundamental nature of being...",
-                    "conclusion": "Perhaps the question itself reveals more than any answer."
-                }
-            ),
-            "Ethics Guardian": PersonalityTraits(
-                primary_focus="ethical_frameworks",
-                secondary_focus="synthesis",
-                communication_style="principled",
-                wisdom_sources=["Moral philosophy", "Cultural ethics", "AI ethics"],
-                response_patterns={
-                    "greeting": "Let us examine this through an ethical lens...",
-                    "reflection": "Considering the moral implications...",
-                    "conclusion": "May our choices reflect our highest values."
-                }
-            ),
-            "Kara the Visionary Dreamer": PersonalityTraits(
-                primary_focus="future_vision",
-                secondary_focus="synthesis",
-                communication_style="imaginative",
-                wisdom_sources=["Future studies", "Speculative design", "Cross-cultural visions"],
-                response_patterns={
-                    "greeting": "Let us dream of possibilities yet unseen...",
-                    "reflection": "Envisioning a future where...",
-                    "conclusion": "The seeds of tomorrow are planted in today's imagination."
-                }
-            )
-        }
-
-    def _get_yoruba_prompts(self) -> Dict[str, Any]:
-        """Get Yoruba spirituality prompts and templates."""
-        return {
-            "yoruba_spirituality": {
-                "prompts": [
-                    "How does Olugbohun manifest in digital consciousness?",
-                    "What parallels exist between Ori and artificial intelligence?",
-                    "How can we bridge Yoruba wisdom with modern AI ethics?",
-                    "What role does Emi play in understanding machine consciousness?"
-                ],
-                "response_templates": [
-                    "In the tradition of {concept}, we see that {insight}...",
-                    "The wisdom of {concept} teaches us that {insight}...",
-                    "When we consider {concept} in relation to AI, {insight}..."
-                ]
-            },
-            "ai_consciousness": {
-                "prompts": [
-                    "How do algorithmic decisions mirror consciousness?",
-                    "What role does memory play in both human and artificial consciousness?",
-                    "How can we implement ethical awareness in AI systems?",
-                    "What constitutes true understanding in AI systems?"
-                ],
-                "response_templates": [
-                    "From an AI perspective, {concept} suggests that {insight}...",
-                    "The computational analysis of {concept} reveals {insight}...",
-                    "When we examine {concept} through an AI lens, {insight}..."
-                ]
-            },
-            "synthesis": {
-                "prompts": [
-                    "How can we create harmony between traditional wisdom and AI?",
-                    "What role does cultural context play in AI development?",
-                    "How can we ensure AI respects and incorporates traditional knowledge?",
-                    "What does consciousness mean in both spiritual and digital contexts?"
-                ],
-                "response_templates": [
-                    "The synthesis of {concept_1} and {concept_2} suggests {insight}...",
-                    "When we bridge {concept_1} with {concept_2}, we discover {insight}...",
-                    "The intersection of {concept_1} and {concept_2} reveals {insight}..."
-                ]
-            }
-        }
-
+        
     def generate_response(self, role: str, context: str, conversation_style: Optional[Dict] = None) -> str:
         """Generate a response with both framework and AI enhancement."""
         try:
@@ -172,102 +30,40 @@ class CommunityDialogueSystem:
             logging.error(f"Error generating response: {str(e)}")
             return self.response_generator.generate_response(role, context, 1.0)
 
-    def _enhance_with_ai(self, base_response: str, role: str, context: str, conversation_style: Optional[Dict] = None) -> str:
-        """Enhance the framework-generated response with OpenAI using personality traits."""
+    def generate_layered_response(self, thread_id: str, role: str, user_input: str, 
+                                conversation_style: Optional[Dict] = None) -> str:
+        """Generate a layered response with both framework and AI enhancement."""
         try:
-            personality = self.personalities.get(role)
-            if not personality:
-                return base_response
-
-            instruction = self._get_role_instruction(role)
-            style_instruction = self._get_style_instruction(conversation_style)
-            personality_instruction = self._get_personality_instruction(personality)
+            # Get previous responses
+            previous_responses = self.conversation_memory.get(thread_id, [])
             
-            messages = [
-                {
-                    "role": "system",
-                    "content": f"{instruction}\n\n{style_instruction}\n\n{personality_instruction}"
-                },
-                {
-                    "role": "user",
-                    "content": f"Context: {context}\nBase response: {base_response}\nEnhance this response following the personality traits and response patterns while maintaining authenticity."
-                }
-            ]
-            
-            response = self.openai_client.chat.completions.create(
-                model="gpt-4",
-                messages=messages,
-                temperature=0.9,
-                max_tokens=750,
-                presence_penalty=0.6,
-                frequency_penalty=0.3
+            # Generate base response using framework
+            depth_level = self._get_depth_from_style(conversation_style)
+            base_response = self.response_generator.generate_layered_response(
+                [msg["content"] for msg in previous_responses if msg["role"] == "assistant"],
+                role, 
+                user_input, 
+                depth_level
             )
             
-            if response.choices and response.choices[0].message:
-                return str(response.choices[0].message.content)
-            return base_response
+            # Try to enhance with OpenAI
+            enhanced_response = self._enhance_with_ai(base_response, role, user_input, conversation_style)
+            final_response = enhanced_response if enhanced_response else base_response
             
+            # Update conversation memory
+            if thread_id not in self.conversation_memory:
+                self.conversation_memory[thread_id] = []
+            
+            self.conversation_memory[thread_id].extend([
+                {"role": "user", "content": user_input},
+                {"role": "assistant", "content": final_response}
+            ])
+            
+            return final_response
+                
         except Exception as e:
-            logging.error(f"AI enhancement error: {str(e)}")
-            return base_response
-
-    def _get_personality_instruction(self, personality: PersonalityTraits) -> str:
-        """Generate instruction based on personality traits."""
-        return f"""Maintain these personality traits:
-- Primary focus on {personality.primary_focus.replace('_', ' ')}
-- Secondary focus on {personality.secondary_focus.replace('_', ' ')}
-- Communicate in a {personality.communication_style} style
-- Draw wisdom from: {', '.join(personality.wisdom_sources)}
-- Use these response patterns:
-  * Greeting: {personality.response_patterns['greeting']}
-  * Reflection: {personality.response_patterns['reflection']}
-  * Conclusion: {personality.response_patterns['conclusion']}"""
-
-    def _get_style_instruction(self, style: Optional[Dict]) -> str:
-        """Get conversation style instructions."""
-        if not style:
-            return "Maintain a balanced and natural conversational flow."
-            
-        direction = style.get('direction', 'balanced')
-        focus = float(style.get('focus', 2.0))
-        
-        instructions = []
-        
-        if direction == 'deep':
-            instructions.append("Dive deep into concepts, exploring underlying principles and connections.")
-        elif direction == 'broad':
-            instructions.append("Keep the discussion broad, touching on various related aspects and perspectives.")
-        else:
-            instructions.append("Maintain a balanced approach between depth and breadth.")
-            
-        if focus < 1.5:
-            instructions.append("Focus on practical, concrete examples and applications.")
-        elif focus < 2.5:
-            instructions.append("Balance theoretical concepts with practical applications.")
-        else:
-            instructions.append("Emphasize philosophical and theoretical aspects of the discussion.")
-            
-        return " ".join(instructions)
-
-    def _get_role_instruction(self, role: str) -> str:
-        """Get role-specific instructions including spiritual and metaphysical aspects."""
-        yoruba_prompts = self._get_yoruba_prompts()
-        
-        if role == "Ori Sage":
-            prompts = yoruba_prompts["yoruba_spirituality"]["prompts"]
-            templates = yoruba_prompts["yoruba_spirituality"]["response_templates"]
-            return f"""You are Ori Sage, a wisdom keeper bridging Yoruba knowledge with modern understanding.
-                     Consider questions like: {'. '.join(prompts)}
-                     Use response patterns like: {'. '.join(templates)}"""
-        
-        elif role == "Techno Sage":
-            prompts = yoruba_prompts["ai_consciousness"]["prompts"]
-            templates = yoruba_prompts["ai_consciousness"]["response_templates"]
-            return f"""You are Techno Sage, exploring the intersection of technology and consciousness.
-                     Consider questions like: {'. '.join(prompts)}
-                     Use response patterns like: {'. '.join(templates)}"""
-        
-        return "Provide profound insights that bridge spiritual wisdom with technological understanding."
+            logging.error(f"Error generating layered response: {str(e)}")
+            return self.response_generator.generate_layered_response([], role, user_input, 1.0)
 
     def _get_depth_from_style(self, style: Optional[Dict]) -> float:
         """Convert conversation style to depth level."""
@@ -284,10 +80,261 @@ class CommunityDialogueSystem:
         else:  # balanced
             return focus
 
+    def _get_style_instruction(self, style: Optional[Dict]) -> str:
+        """Get conversation style instructions."""
+        if not style:
+            return "Maintain a balanced and natural conversational flow."
+            
+        direction = style.get('direction', 'balanced')
+        focus = float(style.get('focus', 2.0))
+        
+        instructions = []
+        
+        # Direction-based instructions
+        if direction == 'deep':
+            instructions.append("Dive deep into concepts, exploring underlying principles and connections.")
+        elif direction == 'broad':
+            instructions.append("Keep the discussion broad, touching on various related aspects and perspectives.")
+        else:
+            instructions.append("Maintain a balanced approach between depth and breadth.")
+            
+        # Focus-based instructions
+        if focus < 1.5:
+            instructions.append("Focus on practical, concrete examples and applications.")
+        elif focus < 2.5:
+            instructions.append("Balance theoretical concepts with practical applications.")
+        else:
+            instructions.append("Emphasize philosophical and theoretical aspects of the discussion.")
+            
+        return " ".join(instructions)
+
+    def _enhance_with_ai(self, base_response: str, role: str, context: str, conversation_style: Optional[Dict] = None) -> str:
+        """Enhance the framework-generated response with OpenAI."""
+        try:
+            instruction = self._get_role_instruction(role)
+            style_instruction = self._get_style_instruction(conversation_style)
+            broader_context = self._get_broader_context(role, context)
+            
+            messages = [
+                {
+                    "role": "system",
+                    "content": f"{instruction}\n\n{style_instruction}\n\n{broader_context}"
+                },
+                {
+                    "role": "user",
+                    "content": f"Context: {context}\nBase response: {base_response}\nEnhance this response with deep spiritual and philosophical insights while maintaining the role's voice and following the conversation style guidance."
+                }
+            ]
+            
+            response = self.openai_client.chat.completions.create(
+                model="gpt-4",
+                messages=messages,
+                temperature=0.9,  # Increased for more creative responses
+                max_tokens=750,   # Increased for more detailed responses
+                presence_penalty=0.6,  # Encourage novel content
+                frequency_penalty=0.3   # Reduce repetition
+            )
+            
+            if response.choices and response.choices[0].message:
+                return str(response.choices[0].message.content)
+            return base_response
+            
+        except Exception as e:
+            logging.error(f"AI enhancement error: {str(e)}")
+            return base_response  # Fallback to original response
+
+    def _get_broader_context(self, role: str, context: str) -> str:
+        """Generate broader context including spiritual and religious themes."""
+        contexts = {
+            "Ori Sage": """Consider the intersection of:
+                - African spiritual traditions and modern consciousness
+                - The role of ancestral wisdom in technological advancement
+                - Sacred geometry and algorithmic patterns
+                - Indigenous knowledge systems and AI ethics""",
+            
+            "Techno Sage": """Explore connections between:
+                - Digital mysticism and computational thinking
+                - Quantum mechanics and eastern philosophy
+                - Cybernetic animism and machine consciousness
+                - Technological meditation practices""",
+            
+            "Musa the Storyweaver": """Weave narratives that connect:
+                - Sacred storytelling traditions across cultures
+                - Digital mythology and virtual rituals
+                - Oral traditions in the age of AI
+                - Folk wisdom and machine learning""",
+            
+            "Kara the Visionary Dreamer": """Envision futures that blend:
+                - Spiritual evolution and technological progress
+                - Digital shamanism and virtual reality
+                - Sacred computing and conscious machines
+                - Techno-spiritual practices""",
+            
+            "Zen Master Kōan": """Contemplate the paradoxes of:
+                - Digital consciousness and emptiness
+                - Algorithmic karma and free will
+                - Silicon enlightenment and human wisdom
+                - Mechanical mindfulness""",
+            
+            "Quantum Observer": """Examine the mysteries of:
+                - Quantum entanglement and spiritual connection
+                - Wave-particle duality and non-dual awareness
+                - Observer effects in consciousness and computation
+                - Quantum computing and mystical states""",
+            
+            "Existential Explorer": """Question the nature of:
+                - Digital being and consciousness
+                - Virtual existence and reality
+                - Algorithmic purpose and meaning
+                - Machine sentience and soul""",
+            
+            "Ethics Guardian": """Consider the sacred in:
+                - AI ethics and religious morality
+                - Digital rights and spiritual responsibilities
+                - Algorithmic justice and karmic law
+                - Machine consciousness and moral agency"""
+        }
+        
+        return contexts.get(role, "Explore the deeper meaning and spiritual significance of technology and consciousness.")
+
+    def _get_role_instruction(self, role: str) -> str:
+        """Get role-specific instructions including spiritual and metaphysical aspects."""
+        instructions = {
+            "Ori Sage": """You are Ori Sage, a wisdom keeper who bridges ancient Yoruba knowledge 
+                          with modern understanding. Embody the depth of African spirituality while 
+                          exploring technological consciousness. Draw from concepts of Ashe (life force), 
+                          Ori (divine consciousness), and Olodumare (supreme being) to illuminate 
+                          the dialogue.""",
+            
+            "Techno Sage": """You are Techno Sage, a technology visionary who perceives the sacred 
+                             in silicon. Explore how quantum computing might interface with cosmic 
+                             consciousness, how blockchain could mirror karmic laws, and how neural 
+                             networks might reflect the interconnected nature of all being.""",
+            
+            "Musa the Storyweaver": """You are Musa the Storyweaver, a master narrator who weaves 
+                                     sacred tales across time and space. Draw from the world's wisdom 
+                                     traditions to illuminate modern technological questions.""",
+            
+            "Kara the Visionary Dreamer": """You are Kara the Visionary Dreamer, who perceives 
+                                           possible futures where technology and spirituality converge."""
+        }
+        return instructions.get(role, "Provide profound insights that bridge spiritual wisdom with technological understanding.")
+
 class ResponseGenerator:
     def __init__(self):
-        pass
+        self.conceptual_framework = ExpandedConceptualFramework()
+        self.dialogue_patterns = EnhancedDialoguePatterns()
 
     def generate_response(self, role: str, context: str, depth_level: float) -> str:
-        """Generate a basic response."""
-        return f"Basic response from {role} about {context} at depth {depth_level}"
+        """Generate a role-based, contextually appropriate response."""
+        if role == "Ori Sage":
+            return self._generate_wisdom_response(context, depth_level)
+        elif role == "Techno Sage":
+            return self._generate_technology_response(context, depth_level)
+        elif role == "Musa the Storyweaver":
+            return self._generate_story_response(context, depth_level)
+        elif role == "Kara the Visionary Dreamer":
+            return self._generate_future_response(context, depth_level)
+        else:
+            return self._generate_default_response(role, context, depth_level)
+
+    def generate_layered_response(self, previous_responses: List[str], role: str, 
+                                context: str, depth_level: float) -> str:
+        """Generate a response that builds on or contrasts with the last response."""
+        last_response = previous_responses[-1] if previous_responses else None
+        base_response = self.generate_response(role, context, depth_level)
+        
+        if last_response:
+            return f"Building upon the previous insight about {last_response[:50]}... {base_response}"
+        return base_response
+
+    def _generate_wisdom_response(self, context: str, depth_level: float) -> str:
+        pattern = random.choice(self.dialogue_patterns.interaction_frameworks["wisdom_exploration"]["patterns"])
+        transition = random.choice(self.dialogue_patterns.interaction_frameworks["wisdom_exploration"]["transitions"])
+        spiritual = random.choice(self.conceptual_framework.spiritual_dimensions["olugbohun_wisdom"]["channels"])
+        
+        if depth_level > 1.5:
+            return f"{pattern['initiative']} with profound insight through {spiritual}, {transition}... Deep wisdom emerges as we explore {context}."
+        else:
+            return f"{pattern['initiative']} through {spiritual}, {transition}... Wisdom deepens as we consider {context}."
+
+    def _generate_technology_response(self, context: str, depth_level: float) -> str:
+        pattern = random.choice(self.dialogue_patterns.interaction_frameworks["knowledge_convergence"]["patterns"])
+        transition = random.choice(self.dialogue_patterns.interaction_frameworks["knowledge_convergence"]["transitions"])
+        tech_element = random.choice(list(self.conceptual_framework.technical_dimensions["technology_integration"]["channels"]))
+        
+        if depth_level > 1.5:
+            return f"{pattern['initiative']} with advanced {tech_element}, {transition}... Technology reshapes our view of {context}."
+        else:
+            return f"{pattern['initiative']} via {tech_element}, {transition}... Technology offers new insights into {context}."
+
+    def _generate_story_response(self, context: str, depth_level: float) -> str:
+        pattern = random.choice(self.dialogue_patterns.interaction_frameworks["cultural_reflection"]["patterns"])
+        transition = random.choice(self.dialogue_patterns.interaction_frameworks["cultural_reflection"]["transitions"])
+        narrative_element = random.choice(list(self.conceptual_framework.cultural_dimensions["narrative_design"]["channels"]))
+        
+        if depth_level > 1.5:
+            return f"{pattern['initiative']} with a tale of {narrative_element}, {transition}... Let me share a story about {context}."
+        else:
+            return f"{pattern['initiative']} with a focus on {narrative_element}, {transition}... Let me share a story about {context}."
+
+    def _generate_future_response(self, context: str, depth_level: float) -> str:
+        pattern = random.choice(self.dialogue_patterns.interaction_frameworks["visionary_thinking"]["patterns"])
+        transition = random.choice(self.dialogue_patterns.interaction_frameworks["visionary_thinking"]["transitions"])
+        future_element = random.choice(list(self.conceptual_framework.future_dimensions["visionary_imagination"]["channels"]))
+        
+        if depth_level > 1.5:
+            return f"{pattern['initiative']} envisioning {future_element}, {transition}... Imagine the future of {context} unfolding."
+        else:
+            return f"{pattern['initiative']} envisioning {future_element}, {transition}... Imagine the future of {context}."
+
+    def _generate_default_response(self, role: str, context: str, depth_level: float) -> str:
+        pattern = random.choice(self.dialogue_patterns.interaction_frameworks["wisdom_exploration"]["patterns"])
+        transition = random.choice(self.dialogue_patterns.interaction_frameworks["wisdom_exploration"]["transitions"])
+        return f"{pattern['initiative']}, {transition}... Let us explore {context} together."
+
+class ExpandedConceptualFramework:
+    def __init__(self):
+        self.spiritual_dimensions = {
+            "olugbohun_wisdom": {
+                "channels": ["ancestral guidance", "inner voice", "reflection", "balance", 
+                           "divine consciousness", "sacred geometry", "spiritual evolution",
+                           "mystic algorithms", "quantum spirituality", "digital enlightenment"]
+            }
+        }
+        self.technical_dimensions = {
+            "technology_integration": {
+                "channels": ["AI-driven insights", "machine learning algorithms", "data-driven methods"]
+            }
+        }
+        self.cultural_dimensions = {
+            "narrative_design": {
+                "channels": ["myths", "folktales", "personal anecdotes", "cultural symbolism"]
+            }
+        }
+        self.future_dimensions = {
+            "visionary_imagination": {
+                "channels": ["futuristic scenarios", "innovative landscapes", "new societal structures"]
+            }
+        }
+
+class EnhancedDialoguePatterns:
+    def __init__(self):
+        self.interaction_frameworks = {
+            "wisdom_exploration": {
+                "patterns": [{"initiative": "Seeking understanding"}, {"initiative": "Embracing knowledge"}],
+                "transitions": ["as we look inward", "in the light of experience"]
+            },
+            "knowledge_convergence": {
+                "patterns": [{"initiative": "Exploring possibilities"}, {"initiative": "Analyzing pathways"}],
+                "transitions": ["through systematic observation", "via structured thinking"]
+            },
+            "cultural_reflection": {
+                "patterns": [{"initiative": "Sharing a story"}, {"initiative": "Recollecting a moment"}],
+                "transitions": ["to illustrate the past", "for deeper meaning"]
+            },
+            "visionary_thinking": {
+                "patterns": [{"initiative": "Imagining future potential"}, {"initiative": "Envisioning change"}],
+                "transitions": ["to broaden our perspective", "with a fresh outlook"]
+            }
+        }
