@@ -71,6 +71,38 @@ function initializeMessageHandling() {
     });
 }
 
+function initializeDirectionControls() {
+    // Direction buttons
+    const directionButtons = document.querySelectorAll('.direction-buttons .btn');
+    directionButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            directionButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            conversationDirection = button.dataset.direction;
+        });
+    });
+
+    // Focus slider
+    const focusSlider = document.getElementById('focusSlider');
+    const focusValue = document.querySelector('.focus-value');
+    if (focusSlider && focusValue) {
+        focusSlider.addEventListener('input', () => {
+            conversationFocus = parseFloat(focusSlider.value);
+            updateFocusLabel(focusValue, conversationFocus);
+        });
+    }
+}
+
+function updateFocusLabel(element, value) {
+    if (value < 1.5) {
+        element.textContent = 'Practical';
+    } else if (value < 2.5) {
+        element.textContent = 'Balanced';
+    } else {
+        element.textContent = 'Philosophical';
+    }
+}
+
 async function sendMessageWithRetry(data, retries = MAX_RETRIES) {
     const endpoint = currentThread ? '/api/chat/continue' : '/api/chat/start';
     
@@ -158,4 +190,147 @@ async function sendMessage() {
     }
 }
 
-// ... [rest of the file remains unchanged] ...
+async function loadTopicsWithRetry(retries = MAX_RETRIES) {
+    try {
+        const response = await fetch('/api/topics');
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.message || 'Failed to load topics');
+        }
+        
+        if (result.status === 'error') {
+            throw new Error(result.message);
+        }
+        
+        updateTopicsList(result.data.topics);
+        
+    } catch (error) {
+        console.error('Error loading topics:', error);
+        
+        if (retries > 0) {
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            return loadTopicsWithRetry(retries - 1);
+        }
+        
+        showError('Unable to load topics. Please refresh the page.');
+    }
+}
+
+function updateTopicsList(topics) {
+    const topicsList = document.getElementById('topics-list');
+    if (!topicsList) return;
+    
+    topicsList.innerHTML = '';
+    
+    if (!topics || topics.length === 0) {
+        topicsList.innerHTML = `
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                No topics available at the moment.
+            </div>`;
+        return;
+    }
+    
+    topics.forEach(topic => {
+        const topicButton = document.createElement('button');
+        topicButton.className = 'topic-button';
+        topicButton.innerHTML = `
+            <span class="topic-category">${topic.category}</span>
+            <h3 class="topic-title">${topic.title}</h3>
+            <p class="topic-description">${topic.description}</p>
+        `;
+        
+        topicButton.addEventListener('click', () => selectTopic(topic));
+        topicsList.appendChild(topicButton);
+    });
+}
+
+function selectTopic(topic) {
+    selectedTopic = topic;
+    document.querySelectorAll('.topic-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.currentTarget.classList.add('active');
+    
+    // Update active topics display
+    updateActiveTopics(topic);
+}
+
+function updateActiveTopics(topic) {
+    const activeTopics = document.getElementById('active-topics');
+    if (!activeTopics) return;
+    
+    const existingChip = Array.from(activeTopics.children)
+        .find(chip => chip.textContent === topic.title);
+        
+    if (!existingChip) {
+        const topicChip = document.createElement('div');
+        topicChip.className = 'topic-chip';
+        topicChip.textContent = topic.title;
+        activeTopics.appendChild(topicChip);
+    }
+}
+
+function addMessage(role, content) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message message-${role === 'user' ? 'user' : 'ai'}`;
+    
+    if (role !== 'user') {
+        const roleHeader = document.createElement('strong');
+        roleHeader.textContent = role;
+        messageDiv.appendChild(roleHeader);
+    }
+    
+    const contentP = document.createElement('p');
+    contentP.textContent = content;
+    messageDiv.appendChild(contentP);
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function addLoadingIndicator() {
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'loading-indicator';
+    loadingDiv.innerHTML = `
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    `;
+    chatMessages.appendChild(loadingDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function removeLoadingIndicator() {
+    const loadingIndicator = document.querySelector('.loading-indicator');
+    if (loadingIndicator) {
+        loadingIndicator.remove();
+    }
+}
+
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'message message-system';
+    errorDiv.innerHTML = `
+        <strong><i class="bi bi-exclamation-triangle me-2"></i>Error</strong>
+        <p>${message}</p>
+    `;
+    chatMessages.appendChild(errorDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // Remove error message after 5 seconds
+    setTimeout(() => {
+        errorDiv.classList.add('fade-out');
+        setTimeout(() => errorDiv.remove(), 500);
+    }, 5000);
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('chatSidebar');
+    const chatMain = document.querySelector('.chat-main');
+    if (sidebar && chatMain) {
+        sidebar.classList.toggle('open');
+        chatMain.classList.toggle('sidebar-open');
+    }
+}
