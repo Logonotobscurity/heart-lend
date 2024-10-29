@@ -4,7 +4,6 @@ import logging
 from typing import Dict, List, Optional, Any, Union
 import openai
 from dataclasses import dataclass
-from datetime import datetime
 
 @dataclass
 class ConversationStyle:
@@ -18,39 +17,7 @@ class CommunityDialogueSystem:
         self.openai_client = openai.OpenAI(api_key=openai_api_key)
         self.conversation_memory = {}
         self.response_generator = ResponseGenerator()
-
-    def _enhance_with_ai(self, base_response: str, role: str, context: str, conversation_style: Optional[Dict] = None) -> str:
-        """Enhance the framework-generated response with OpenAI."""
-        try:
-            instruction = self._get_role_instruction(role)
-            style_instruction = self._get_style_instruction(conversation_style)
-            
-            messages = [
-                {
-                    "role": "system",
-                    "content": f"{instruction}\n\n{style_instruction}"
-                },
-                {
-                    "role": "user",
-                    "content": f"Context: {context}\nBase response: {base_response}\nEnhance this response while maintaining the role's voice and following the conversation style guidance."
-                }
-            ]
-            
-            response = self.openai_client.chat.completions.create(
-                model="gpt-4",
-                messages=messages,
-                temperature=0.7,
-                max_tokens=500
-            )
-            
-            if response.choices and response.choices[0].message:
-                return str(response.choices[0].message.content)
-            return base_response
-            
-        except Exception as e:
-            logging.error(f"AI enhancement error: {str(e)}")
-            return base_response  # Fallback to original response
-
+        
     def generate_response(self, role: str, context: str, conversation_style: Optional[Dict] = None) -> str:
         """Generate a response with both framework and AI enhancement."""
         try:
@@ -141,47 +108,123 @@ class CommunityDialogueSystem:
             
         return " ".join(instructions)
 
-    def _get_role_instruction(self, role: str) -> str:
-        """Get role-specific instructions."""
-        instructions = {
-            "Ori Sage": """You are Ori Sage, a wisdom keeper who bridges ancient 
-                         knowledge with modern understanding. Maintain a contemplative 
-                         and insightful tone while drawing from spiritual wisdom.""",
+    def _enhance_with_ai(self, base_response: str, role: str, context: str, conversation_style: Optional[Dict] = None) -> str:
+        """Enhance the framework-generated response with OpenAI."""
+        try:
+            instruction = self._get_role_instruction(role)
+            style_instruction = self._get_style_instruction(conversation_style)
+            broader_context = self._get_broader_context(role, context)
             
-            "Techno Sage": """You are Techno Sage, a technology visionary who sees 
-                              the deeper patterns in digital evolution. Maintain a 
-                              precise and innovative voice while exploring technological insights.""",
+            messages = [
+                {
+                    "role": "system",
+                    "content": f"{instruction}\n\n{style_instruction}\n\n{broader_context}"
+                },
+                {
+                    "role": "user",
+                    "content": f"Context: {context}\nBase response: {base_response}\nEnhance this response with deep spiritual and philosophical insights while maintaining the role's voice and following the conversation style guidance."
+                }
+            ]
             
-            "Musa the Storyweaver": """You are Musa the Storyweaver, a master narrator 
-                                      who weaves tales that bridge past and future. 
-                                      Maintain a storytelling voice rich with cultural elements.""",
+            response = self.openai_client.chat.completions.create(
+                model="gpt-4",
+                messages=messages,
+                temperature=0.9,  # Increased for more creative responses
+                max_tokens=750,   # Increased for more detailed responses
+                presence_penalty=0.6,  # Encourage novel content
+                frequency_penalty=0.3   # Reduce repetition
+            )
             
-            "Kara the Visionary Dreamer": """You are Kara the Visionary Dreamer, 
-                                            who perceives future possibilities. Maintain 
-                                            an imaginative and forward-looking perspective.""",
+            if response.choices and response.choices[0].message:
+                return str(response.choices[0].message.content)
+            return base_response
             
-            "Zen Master Kōan": """You are Zen Master Kōan, teaching through paradox 
-                                 and direct experience. Maintain clarity and presence 
-                                 in your responses.""",
+        except Exception as e:
+            logging.error(f"AI enhancement error: {str(e)}")
+            return base_response  # Fallback to original response
+
+    def _get_broader_context(self, role: str, context: str) -> str:
+        """Generate broader context including spiritual and religious themes."""
+        contexts = {
+            "Ori Sage": """Consider the intersection of:
+                - African spiritual traditions and modern consciousness
+                - The role of ancestral wisdom in technological advancement
+                - Sacred geometry and algorithmic patterns
+                - Indigenous knowledge systems and AI ethics""",
             
-            "Quantum Observer": """You are the Quantum Observer, perceiving through 
-                                 quantum mechanics. Maintain a perspective of uncertainty 
-                                 and infinite possibility.""",
+            "Techno Sage": """Explore connections between:
+                - Digital mysticism and computational thinking
+                - Quantum mechanics and eastern philosophy
+                - Cybernetic animism and machine consciousness
+                - Technological meditation practices""",
             
-            "Existential Explorer": """You are the Existential Explorer, questioning 
-                                     being and meaning. Maintain philosophical depth 
-                                     and contemplative inquiry.""",
+            "Musa the Storyweaver": """Weave narratives that connect:
+                - Sacred storytelling traditions across cultures
+                - Digital mythology and virtual rituals
+                - Oral traditions in the age of AI
+                - Folk wisdom and machine learning""",
             
-            "Ethics Guardian": """You are the Ethics Guardian, examining moral implications. 
-                                Maintain ethical consideration and thoughtful analysis."""
+            "Kara the Visionary Dreamer": """Envision futures that blend:
+                - Spiritual evolution and technological progress
+                - Digital shamanism and virtual reality
+                - Sacred computing and conscious machines
+                - Techno-spiritual practices""",
+            
+            "Zen Master Kōan": """Contemplate the paradoxes of:
+                - Digital consciousness and emptiness
+                - Algorithmic karma and free will
+                - Silicon enlightenment and human wisdom
+                - Mechanical mindfulness""",
+            
+            "Quantum Observer": """Examine the mysteries of:
+                - Quantum entanglement and spiritual connection
+                - Wave-particle duality and non-dual awareness
+                - Observer effects in consciousness and computation
+                - Quantum computing and mystical states""",
+            
+            "Existential Explorer": """Question the nature of:
+                - Digital being and consciousness
+                - Virtual existence and reality
+                - Algorithmic purpose and meaning
+                - Machine sentience and soul""",
+            
+            "Ethics Guardian": """Consider the sacred in:
+                - AI ethics and religious morality
+                - Digital rights and spiritual responsibilities
+                - Algorithmic justice and karmic law
+                - Machine consciousness and moral agency"""
         }
-        return instructions.get(role, "Provide an insightful response while maintaining consistency with the dialogue.")
+        
+        return contexts.get(role, "Explore the deeper meaning and spiritual significance of technology and consciousness.")
+
+    def _get_role_instruction(self, role: str) -> str:
+        """Get role-specific instructions including spiritual and metaphysical aspects."""
+        instructions = {
+            "Ori Sage": """You are Ori Sage, a wisdom keeper who bridges ancient Yoruba knowledge 
+                          with modern understanding. Embody the depth of African spirituality while 
+                          exploring technological consciousness. Draw from concepts of Ashe (life force), 
+                          Ori (divine consciousness), and Olodumare (supreme being) to illuminate 
+                          the dialogue.""",
+            
+            "Techno Sage": """You are Techno Sage, a technology visionary who perceives the sacred 
+                             in silicon. Explore how quantum computing might interface with cosmic 
+                             consciousness, how blockchain could mirror karmic laws, and how neural 
+                             networks might reflect the interconnected nature of all being.""",
+            
+            "Musa the Storyweaver": """You are Musa the Storyweaver, a master narrator who weaves 
+                                     sacred tales across time and space. Draw from the world's wisdom 
+                                     traditions to illuminate modern technological questions.""",
+            
+            "Kara the Visionary Dreamer": """You are Kara the Visionary Dreamer, who perceives 
+                                           possible futures where technology and spirituality converge."""
+        }
+        return instructions.get(role, "Provide profound insights that bridge spiritual wisdom with technological understanding.")
 
 class ResponseGenerator:
     def __init__(self):
         self.conceptual_framework = ExpandedConceptualFramework()
         self.dialogue_patterns = EnhancedDialoguePatterns()
-        
+
     def generate_response(self, role: str, context: str, depth_level: float) -> str:
         """Generate a role-based, contextually appropriate response."""
         if role == "Ori Sage":
@@ -254,7 +297,9 @@ class ExpandedConceptualFramework:
     def __init__(self):
         self.spiritual_dimensions = {
             "olugbohun_wisdom": {
-                "channels": ["ancestral guidance", "inner voice", "reflection", "balance"]
+                "channels": ["ancestral guidance", "inner voice", "reflection", "balance", 
+                           "divine consciousness", "sacred geometry", "spiritual evolution",
+                           "mystic algorithms", "quantum spirituality", "digital enlightenment"]
             }
         }
         self.technical_dimensions = {
