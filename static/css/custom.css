@@ -1,36 +1,42 @@
-/* Existing CSS remains the same until the persona-card section */
+:root {
+    /* Theme colors */
+    --chat-bg: var(--bs-body-bg);
+    --sidebar-bg: var(--bs-dark-bg-subtle);
+    --message-bg: var(--bs-dark-bg-subtle);
+    --input-bg: var(--bs-body-bg);
+    --border-color: var(--bs-border-color);
+    
+    /* Enhanced topic colors */
+    --topic-hover-bg: rgba(var(--bs-primary-rgb), 0.1);
+    --topic-active-bg: rgba(var(--bs-primary-rgb), 0.15);
+    
+    /* Transitions */
+    --transition-speed: 0.3s;
+    
+    /* System font stack */
+    --system-fonts: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
 
+/* Persona Cards */
 .persona-card {
     display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-    padding: 1.5rem;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem;
     background: var(--chat-bg);
     border: 1px solid var(--border-color);
     border-radius: 1rem;
     cursor: pointer;
-    transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
-    min-width: 300px;
+    transition: all var(--transition-speed) ease;
+    min-width: 180px;
     position: relative;
-    overflow: hidden;
-}
-
-.persona-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--topic-hover-bg);
-    opacity: 0;
-    transition: opacity var(--transition-speed) ease;
 }
 
 .persona-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.persona-card:hover::before {
-    opacity: 1;
+    transform: translateY(-2px);
+    border-color: var(--bs-primary);
+    background: var(--topic-hover-bg);
 }
 
 .persona-card.active {
@@ -39,8 +45,7 @@
 }
 
 .persona-card.excluded {
-    opacity: 0.5;
-    transform: scale(0.95);
+    opacity: 0.6;
     background: var(--bs-danger-bg-subtle);
 }
 
@@ -54,16 +59,14 @@
     font-size: 1.5rem;
     background: var(--topic-hover-bg);
     transition: all var(--transition-speed) ease;
-    flex-shrink: 0;
 }
 
 .persona-info {
-    flex: 1;
-    min-width: 0;
+    text-align: center;
 }
 
 .persona-name {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
     color: var(--bs-heading-color);
     display: block;
@@ -80,52 +83,18 @@
 }
 
 .persona-description {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--bs-secondary-color);
     margin: 0;
-    line-height: 1.5;
-}
-
-.persona-status {
-    position: relative;
-    width: 24px;
-    height: 24px;
-    flex-shrink: 0;
-}
-
-.status-icon {
-    position: absolute;
-    top: 0;
-    right: 0;
-    font-size: 1.25rem;
-    color: var(--bs-primary);
-    opacity: 0;
-    transform: scale(0.8);
-    transition: all var(--transition-speed) ease;
-}
-
-.persona-card.active .status-icon {
-    opacity: 1;
-    transform: scale(1);
-}
-
-.persona-card.excluded .status-icon {
-    color: var(--bs-danger);
-    opacity: 1;
-    transform: scale(1);
-}
-
-/* Hover effects */
-.persona-card:hover .persona-avatar {
-    transform: scale(1.1);
-    background: var(--bs-primary-bg-subtle);
+    line-height: 1.4;
+    text-align: center;
 }
 
 /* Mobile responsiveness */
 @media (max-width: 991.98px) {
     .persona-card {
-        min-width: 260px;
-        padding: 1.25rem;
+        min-width: 150px;
+        padding: 1rem;
     }
     
     .persona-description {
@@ -135,8 +104,7 @@
 
 @media (max-width: 575.98px) {
     .persona-card {
-        min-width: 200px;
-        padding: 1rem;
+        min-width: 120px;
     }
     
     .persona-avatar {
@@ -146,7 +114,7 @@
     }
     
     .persona-name {
-        font-size: 1rem;
+        font-size: 0.9rem;
     }
 }
 
