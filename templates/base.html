@@ -9,9 +9,28 @@
     <link rel="stylesheet" href="/static/css/custom.css">
 </head>
 <body>
+    <!-- Preloader -->
+    <div class="preloader">
+        <div class="spinner">
+            <div class="double-bounce1"></div>
+            <div class="double-bounce2"></div>
+        </div>
+        <div class="loading-text">Exploring Consciousness...</div>
+    </div>
+
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/">AI Consciousness Explorer</a>
+            <a class="navbar-brand" href="/">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="bi bi-circle-half"></i>
+                    </div>
+                    <div class="logo-text">
+                        <span class="logo-title">AI Consciousness</span>
+                        <span class="logo-subtitle">Explorer</span>
+                    </div>
+                </div>
+            </a>
         </div>
     </nav>
     
@@ -20,6 +39,15 @@
     </main>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Hide preloader when page is loaded
+        window.addEventListener('load', () => {
+            document.querySelector('.preloader').style.opacity = '0';
+            setTimeout(() => {
+                document.querySelector('.preloader').style.display = 'none';
+            }, 500);
+        });
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
