@@ -1,12 +1,13 @@
 // Global variables with proper initialization
 let currentThread = null;
 let selectedTopic = null;
-let activePersona = null;
+let excludedPersonas = new Set();
 let availablePersonas = [
     "Ori Sage", "Techno Sage", "Musa the Storyweaver", 
     "Kara the Visionary Dreamer", "Zen Master Kōan",
     "Quantum Observer", "Existential Explorer", "Ethics Guardian"
 ];
+let currentPersonaIndex = 0;
 let conversationDirection = 'balanced';
 let conversationFocus = 2;
 let isLoading = false;
@@ -46,37 +47,15 @@ function initializePersonas() {
     personaCards.forEach(card => {
         card.addEventListener('click', () => {
             const role = card.dataset.role;
-            
-            // Clear previous selection
-            personaCards.forEach(c => {
-                c.classList.remove('active');
-                c.classList.remove('excluded');
-            });
-            
-            // Set new active persona
-            if (role === activePersona) {
-                activePersona = null;
-                card.classList.remove('active');
+            if (excludedPersonas.has(role)) {
+                excludedPersonas.delete(role);
+                card.classList.remove('excluded');
             } else {
-                activePersona = role;
-                card.classList.add('active');
+                excludedPersonas.add(role);
+                card.classList.add('excluded');
             }
-            
-            // Update send button state
-            updateSendButtonState();
         });
     });
-}
-
-function updateSendButtonState() {
-    if (sendButton) {
-        sendButton.disabled = !activePersona;
-        if (!activePersona) {
-            sendButton.title = 'Please select an AI guide to continue';
-        } else {
-            sendButton.title = `Selected guide: ${activePersona}`;
-        }
-    }
 }
 
 function initializeScrolling() {
@@ -93,9 +72,6 @@ function initializeMessageHandling() {
             sendMessage();
         }
     });
-    
-    // Initialize send button state
-    updateSendButtonState();
 }
 
 function initializeDirectionControls() {
@@ -161,11 +137,21 @@ async function sendMessageWithRetry(data, retries = MAX_RETRIES) {
 }
 
 async function sendMessage() {
-    if (isLoading || !activePersona) return;
+    if (isLoading) return;
     
     const message = messageInput.value.trim();
     if (!message) return;
     
+    // Get next available persona
+    const availableRoles = availablePersonas.filter(p => !excludedPersonas.has(p));
+    if (availableRoles.length === 0) {
+        showError('Please include at least one AI guide in the conversation');
+        return;
+    }
+
+    currentPersonaIndex = (currentPersonaIndex + 1) % availableRoles.length;
+    const respondingRole = availableRoles[currentPersonaIndex];
+
     messageInput.value = '';
     isLoading = true;
     addLoadingIndicator();
@@ -173,19 +159,15 @@ async function sendMessage() {
     try {
         const requestData = currentThread ? {
             thread_id: currentThread,
-            role: activePersona,
+            role: respondingRole,
             input: message,
             style: {
                 direction: conversationDirection,
                 focus: conversationFocus
             }
         } : {
-            role: activePersona,
-            context: message,
-            style: {
-                direction: conversationDirection,
-                focus: conversationFocus
-            }
+            role: respondingRole,
+            context: message
         };
 
         // Add user message to chat
@@ -197,7 +179,7 @@ async function sendMessage() {
             currentThread = response.thread_id;
         }
 
-        addMessage(activePersona, response.response);
+        addMessage(respondingRole, response.response);
 
     } catch (error) {
         console.error('Error sending message:', error);
