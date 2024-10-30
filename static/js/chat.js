@@ -3,9 +3,8 @@ let currentThread = null;
 let selectedTopic = null;
 let excludedPersonas = new Set();
 let availablePersonas = [
-    "Ori Sage", "Techno Sage", "Musa the Storyweaver", 
-    "Kara the Visionary Dreamer", "Zen Master Kōan",
-    "Quantum Observer", "Existential Explorer", "Ethics Guardian"
+    "Ori Sage", "Techno Sage", "Quantum Observer", 
+    "Existential Explorer", "Kara the Visionary Dreamer"
 ];
 let currentPersonaIndex = 0;
 let conversationDirection = 'balanced';

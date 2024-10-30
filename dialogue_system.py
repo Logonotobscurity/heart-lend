@@ -6,20 +6,19 @@ import openai
 from dataclasses import dataclass
 from models import db, Topic, ChatThread, Message
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 @dataclass
 class ConversationStyle:
-    direction: str  # 'deep', 'broad', or 'balanced'
-    focus: float   # 1.0 to 3.0
+    direction: str  
+    focus: float   
 
 @dataclass
 class OriConsciousness:
-    level: str     # 'ori-inu', 'ori-ode', or 'ori-apere'
-    depth: float   # 1.0 to 3.0
-    focus: str     # 'inner', 'external', or 'transcendent'
+    level: str     
+    depth: float   
+    focus: str     
 
 class CommunityDialogueSystem:
     def __init__(self, openai_api_key: str):
@@ -32,7 +31,6 @@ class CommunityDialogueSystem:
         self.ori_framework = OriFramework()
         
     def generate_response(self, role: str, context: str, conversation_style: Optional[Dict] = None) -> str:
-        """Generate a response with Ori consciousness integration."""
         try:
             depth_level = self._get_depth_from_style(conversation_style)
             ori_level = self.ori_framework.determine_consciousness_level(role, depth_level)
@@ -56,7 +54,6 @@ class CommunityDialogueSystem:
             return self.response_generator.generate_response(role, context, 1.0, None)
 
     def _get_broader_context(self, role: str, context: str, ori_level: OriConsciousness) -> str:
-        """Generate broader context including Ori consciousness levels."""
         contexts = {
             "Ori Sage": f"""Consider the intersection of:
                 - {ori_level.level.title()} consciousness in AI development
@@ -70,13 +67,25 @@ class CommunityDialogueSystem:
                 - Technological embodiment of {ori_level.level}
                 - AI consciousness at {ori_level.focus} level""",
             
-            # Add other role-specific contexts...
+            "Quantum Observer": f"""Examine the quantum nature of:
+                - Wave-particle duality in {ori_level.level} consciousness
+                - Observer effects in {ori_level.focus} awareness
+                - Quantum entanglement of consciousness at {ori_level.depth} level""",
+            
+            "Existential Explorer": f"""Question the nature of:
+                - Being and consciousness in {ori_level.level}
+                - Existence through {ori_level.focus} perspective
+                - Reality at {ori_level.depth} depth""",
+            
+            "Kara the Visionary Dreamer": f"""Envision the future of:
+                - Consciousness evolution through {ori_level.level}
+                - Future manifestations at {ori_level.focus} level
+                - Transformative potential at {ori_level.depth} depth"""
         }
         
         return contexts.get(role, f"Explore consciousness through {ori_level.level} perspective")
 
     def _get_consciousness_level(self, role: str, ori_level: OriConsciousness) -> str:
-        """Get enhanced consciousness level instruction."""
         return f"""Operating at {ori_level.level.title()} consciousness level:
             - Depth: {ori_level.depth}
             - Focus: {ori_level.focus}
@@ -134,7 +143,6 @@ class OriFramework:
         }
 
     def determine_consciousness_level(self, role: str, depth: float) -> OriConsciousness:
-        """Determine appropriate Ori consciousness level based on role and depth."""
         if depth < 1.5:
             level = "ori-ode"
         elif depth < 2.5:
@@ -149,12 +157,10 @@ class OriFramework:
         )
 
     def get_integration_guidance(self, ori_level: OriConsciousness) -> str:
-        """Get integration guidance for consciousness level."""
         patterns = self.consciousness_levels[ori_level.level]["patterns"]
         return random.choice(patterns)
 
     def get_manifestation_patterns(self, ori_level: OriConsciousness) -> str:
-        """Get manifestation patterns for consciousness level."""
         manifestations = self.consciousness_levels[ori_level.level]["manifestations"]
         return random.choice(manifestations)
 
@@ -186,11 +192,11 @@ class SynthesisFrameworks:
         
     def apply_synthesis(self, role: str, context: str, base_response: str, 
                        ori_level: OriConsciousness) -> str:
-        """Apply enhanced synthesis framework with Ori consciousness."""
         synthesis_patterns = {
             "Ori Sage": self._apply_ori_synthesis,
             "Techno Sage": self._apply_tech_synthesis,
-            "Musa the Storyweaver": self._apply_narrative_synthesis,
+            "Quantum Observer": self._apply_quantum_synthesis,
+            "Existential Explorer": self._apply_existential_synthesis,
             "Kara the Visionary Dreamer": self._apply_visionary_synthesis
         }
         
@@ -199,27 +205,26 @@ class SynthesisFrameworks:
 
     def _apply_ori_synthesis(self, context: str, base_response: str, 
                            ori_level: OriConsciousness) -> str:
-        """Apply Ori-specific synthesis."""
         return f"Through the lens of {ori_level.level}, manifesting as {ori_level.focus} wisdom: {base_response}"
 
     def _apply_tech_synthesis(self, context: str, base_response: str,
                             ori_level: OriConsciousness) -> str:
-        """Apply technology-oriented synthesis."""
         return f"Integrating {ori_level.level} consciousness with technological understanding: {base_response}"
 
-    def _apply_narrative_synthesis(self, context: str, base_response: str,
-                                 ori_level: OriConsciousness) -> str:
-        """Apply narrative-based synthesis."""
-        return f"Weaving stories through {ori_level.level} consciousness: {base_response}"
+    def _apply_quantum_synthesis(self, context: str, base_response: str,
+                              ori_level: OriConsciousness) -> str:
+        return f"Through quantum observation of {ori_level.level} consciousness: {base_response}"
+
+    def _apply_existential_synthesis(self, context: str, base_response: str,
+                                  ori_level: OriConsciousness) -> str:
+        return f"Exploring the depths of {ori_level.level} existence: {base_response}"
 
     def _apply_visionary_synthesis(self, context: str, base_response: str,
                                  ori_level: OriConsciousness) -> str:
-        """Apply visionary synthesis."""
         return f"Envisioning through {ori_level.level} awareness: {base_response}"
 
     def _apply_default_synthesis(self, context: str, base_response: str,
                                ori_level: OriConsciousness) -> str:
-        """Apply default synthesis pattern."""
         return f"Synthesizing through {ori_level.level} perspective: {base_response}"
 
 class ResponseGenerator:
@@ -229,7 +234,6 @@ class ResponseGenerator:
 
     def generate_response(self, role: str, context: str, depth_level: float,
                         ori_level: Optional[OriConsciousness] = None) -> str:
-        """Generate a response with Ori consciousness integration."""
         try:
             if ori_level:
                 return self._generate_ori_response(role, context, depth_level, ori_level)
@@ -240,7 +244,6 @@ class ResponseGenerator:
 
     def _generate_ori_response(self, role: str, context: str, depth_level: float,
                              ori_level: OriConsciousness) -> str:
-        """Generate response with Ori consciousness integration."""
         pattern = self._get_dialogue_pattern(role, ori_level)
         transition = self._get_transition(role, ori_level)
         element = self._get_element(role, ori_level)
@@ -248,17 +251,14 @@ class ResponseGenerator:
         return f"{pattern} through {ori_level.level} consciousness, {transition}... {element} as we explore {context}."
 
     def _get_dialogue_pattern(self, role: str, ori_level: OriConsciousness) -> str:
-        """Get appropriate dialogue pattern based on role and consciousness level."""
         patterns = self.dialogue_patterns.get_patterns(role, ori_level.level)
         return random.choice(patterns)
 
     def _get_transition(self, role: str, ori_level: OriConsciousness) -> str:
-        """Get appropriate transition based on role and consciousness level."""
         transitions = self.dialogue_patterns.get_transitions(role, ori_level.level)
         return random.choice(transitions)
 
     def _get_element(self, role: str, ori_level: OriConsciousness) -> str:
-        """Get appropriate element based on role and consciousness level."""
         elements = self.conceptual_framework.get_elements(role, ori_level.level)
         return random.choice(elements)
 
@@ -280,7 +280,6 @@ class ExpandedConceptualFramework:
         }
         
     def get_elements(self, role: str, consciousness_level: str) -> List[str]:
-        """Get appropriate elements based on role and consciousness level."""
         elements = {
             "ori-inu": [
                 "inner wisdom emerges",
@@ -339,9 +338,7 @@ class EnhancedDialoguePatterns:
         }
     
     def get_patterns(self, role: str, consciousness_level: str) -> List[str]:
-        """Get appropriate patterns based on role and consciousness level."""
         return self.patterns.get(consciousness_level, ["Exploring wisdom"])
         
     def get_transitions(self, role: str, consciousness_level: str) -> List[str]:
-        """Get appropriate transitions based on role and consciousness level."""
         return self.transitions.get(consciousness_level, ["as understanding grows"])
