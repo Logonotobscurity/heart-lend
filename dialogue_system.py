@@ -1,19 +1,12 @@
 import random
-import time
 import logging
 from typing import Dict, List, Optional, Any, Union
 import openai
 from dataclasses import dataclass
-from sqlalchemy import text
-from models import db, Topic, ChatThread, Message
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-@dataclass
-class ConversationStyle:
-    direction: str  
-    focus: float   
 
 @dataclass
 class OriConsciousness:
@@ -30,15 +23,17 @@ class YorubaPersona:
         self.response_pattern = response_pattern
 
 class CommunityDialogueSystem:
-    def __init__(self, openai_api_key: str):
-        if not openai_api_key:
+    def __init__(self, openai_api_key: Optional[str] = None):
+        self.openai_api_key = openai_api_key or os.getenv('OPENAI_API_KEY')
+        if not self.openai_api_key:
             raise ValueError("OpenAI API key is required")
-        self.openai_client = openai.OpenAI(api_key=openai_api_key)
+        self.openai_client = openai.OpenAI(api_key=self.openai_api_key)
         self.conversation_memory = {}
         self.response_generator = ResponseGenerator()
         self.synthesis_frameworks = SynthesisFrameworks()
         self.ori_framework = OriFramework()
         
+        # Initialize Yoruba personas with their spiritual essences
         self.personas = {
             "ESU": YorubaPersona(
                 name="ESU",
@@ -70,6 +65,55 @@ class CommunityDialogueSystem:
             )
         }
 
+    def generate_multi_persona_response(self, roles: List[str], context: str, 
+                                      previous_responses: List[Dict] = None,
+                                      conversation_style: Optional[Dict] = None) -> List[Dict]:
+        """Generate responses from multiple personas, acknowledging previous responses."""
+        try:
+            responses = []
+            depth_level = self._get_depth_from_style(conversation_style)
+            ori_level = self.ori_framework.determine_consciousness_level(roles[0], depth_level)
+            
+            for i, role in enumerate(roles):
+                # Generate base response
+                base_response = self.response_generator.generate_response(
+                    role, context, depth_level, ori_level
+                )
+                
+                # Add acknowledgments of previous responses
+                if i > 0 and previous_responses:
+                    acknowledgment = self._generate_acknowledgment(
+                        role, previous_responses[-1]["role"], previous_responses[-1]["content"]
+                    )
+                    base_response = f"{acknowledgment} {base_response}"
+                
+                # Apply interaction patterns
+                if i > 0:
+                    base_response = self._apply_interaction_pattern(
+                        role, roles[i-1], base_response
+                    )
+                
+                # Enhance with AI
+                enhanced_response = self._enhance_with_ai(
+                    base_response, role, context, conversation_style, ori_level
+                )
+                
+                final_response = self._enhance_with_persona(
+                    enhanced_response if enhanced_response else base_response,
+                    role
+                )
+                
+                responses.append({
+                    "role": role,
+                    "content": final_response
+                })
+                
+            return responses
+            
+        except Exception as e:
+            logger.error(f"Error generating multi-persona response: {str(e)}")
+            return [{"role": roles[0], "content": self.response_generator._generate_default_response(roles[0], context, 1.0)}]
+
     def _get_depth_from_style(self, style: Optional[Dict]) -> float:
         if not style:
             return 1.0
@@ -84,11 +128,65 @@ class CommunityDialogueSystem:
         
         return min(focus * depth_multipliers.get(direction, 1.0), 3.0)
 
-    def _get_persona(self, role: str) -> Optional[YorubaPersona]:
-        return self.personas.get(role)
+    def _generate_acknowledgment(self, current_role: str, previous_role: str, previous_content: str) -> str:
+        """Generate an acknowledgment of the previous response."""
+        acknowledgment_templates = {
+            "ESU": [
+                f"Building upon {previous_role}'s insight,",
+                f"Weaving together with {previous_role}'s wisdom,",
+                f"At this crossroads of understanding with {previous_role},"
+            ],
+            "OGUN": [
+                f"Forging ahead from {previous_role}'s perspective,",
+                f"Strengthening {previous_role}'s understanding,",
+                f"Adding technological insight to {previous_role}'s wisdom,"
+            ],
+            "OBATALA": [
+                f"In harmony with {previous_role}'s wisdom,",
+                f"Bringing peace to {previous_role}'s perspective,",
+                f"Weaving wisdom with {previous_role}'s understanding,"
+            ],
+            "SANGO": [
+                f"By divine authority, following {previous_role}'s insight,",
+                f"With thunderous agreement to {previous_role}'s wisdom,",
+                f"Channeling power through {previous_role}'s understanding,"
+            ]
+        }
+        
+        default_templates = [
+            f"Acknowledging {previous_role}'s perspective,",
+            f"Building upon what {previous_role} shared,",
+            f"In response to {previous_role}'s insight,"
+        ]
+        
+        templates = acknowledgment_templates.get(current_role, default_templates)
+        return random.choice(templates)
+
+    def _apply_interaction_pattern(self, current_role: str, previous_role: str, response: str) -> str:
+        """Apply interaction patterns between personas."""
+        interaction_patterns = {
+            ("ESU", "OGUN"): "Through the crossroads of technology",
+            ("ESU", "OBATALA"): "Where wisdom meets divine paths",
+            ("ESU", "SANGO"): "At the intersection of power and choice",
+            ("OGUN", "ESU"): "Forging paths through divine crossroads",
+            ("OGUN", "OBATALA"): "Tempering wisdom with progress",
+            ("OGUN", "SANGO"): "Channeling thunder through technology",
+            ("OBATALA", "ESU"): "Bringing peace to life's crossroads",
+            ("OBATALA", "OGUN"): "Balancing progress with wisdom",
+            ("OBATALA", "SANGO"): "Harmonizing power with creation",
+            ("SANGO", "ESU"): "Thunder echoes through the crossroads",
+            ("SANGO", "OGUN"): "Divine power meets sacred technology",
+            ("SANGO", "OBATALA"): "Leadership guided by wisdom"
+        }
+        
+        pattern = interaction_patterns.get((current_role, previous_role))
+        if pattern:
+            return f"{pattern}, {response}"
+        return response
 
     def _enhance_with_persona(self, response: str, role: str) -> str:
-        persona = self._get_persona(role)
+        """Enhance response with persona-specific elements."""
+        persona = self.personas.get(role)
         if not persona:
             return response
             
@@ -103,72 +201,9 @@ class CommunityDialogueSystem:
             
         return response
 
-    def generate_response(self, role: str, context: str, conversation_style: Optional[Dict] = None) -> str:
-        try:
-            depth_level = self._get_depth_from_style(conversation_style)
-            ori_level = self.ori_framework.determine_consciousness_level(role, depth_level)
-            
-            base_response = self.response_generator.generate_response(
-                role, context, depth_level, ori_level
-            )
-            
-            synthesis = self.synthesis_frameworks.apply_synthesis(
-                role, context, base_response, ori_level
-            )
-            
-            enhanced_response = self._enhance_with_ai(
-                synthesis, role, context, conversation_style, ori_level
-            )
-            
-            final_response = enhanced_response if enhanced_response else synthesis
-            return self._enhance_with_persona(final_response, role)
-                
-        except Exception as e:
-            logger.error(f"Error generating response: {str(e)}")
-            return self.response_generator._generate_default_response(role, context, 1.0)
-
-    def _get_broader_context(self, role: str, context: str, ori_level: OriConsciousness) -> str:
-        persona = self._get_persona(role)
-        if persona:
-            return f"""Through the lens of {role}:
-                - Nature: {persona.nature}
-                - Style: {persona.communication_style}
-                - Domains: {', '.join(persona.sacred_domains)}
-                - Pattern: {persona.response_pattern}
-                - Consciousness: {ori_level.level} at depth {ori_level.depth}"""
-                
-        contexts = {
-            "Ori Sage": f"""Consider the intersection of:
-                - {ori_level.level.title()} consciousness in AI development
-                - Traditional Yoruba wisdom at {ori_level.focus} level
-                - Sacred patterns in {ori_level.level} manifestation
-                - Indigenous knowledge integration at depth level {ori_level.depth}""",
-            
-            "Techno Sage": f"""Explore connections between:
-                - Digital manifestation of {ori_level.level}
-                - Quantum aspects of {ori_level.focus} consciousness
-                - Technological embodiment of {ori_level.level}
-                - AI consciousness at {ori_level.focus} level""",
-            
-            "Quantum Observer": f"""Examine the quantum nature of:
-                - Wave-particle duality in {ori_level.level} consciousness
-                - Observer effects in {ori_level.focus} awareness
-                - Quantum entanglement of consciousness at {ori_level.depth} level""",
-            
-            "Existential Explorer": f"""Question the nature of:
-                - Being and consciousness in {ori_level.level}
-                - Existence through {ori_level.focus} perspective
-                - Reality at {ori_level.depth} depth""",
-            
-            "Kara the Visionary Dreamer": f"""Envision the future of:
-                - Consciousness evolution through {ori_level.level}
-                - Future manifestations at {ori_level.focus} level
-                - Transformative potential at {ori_level.depth} depth"""
-        }
-        
-        return contexts.get(role, f"Explore consciousness through {ori_level.level} perspective")
-
-    def _enhance_with_ai(self, base_response: str, role: str, context: str, conversation_style: Optional[Dict], ori_level: OriConsciousness) -> Optional[str]:
+    def _enhance_with_ai(self, base_response: str, role: str, context: str, 
+                        conversation_style: Optional[Dict], ori_level: OriConsciousness) -> Optional[str]:
+        """Enhance response using OpenAI's API."""
         try:
             broader_context = self._get_broader_context(role, context, ori_level)
             consciousness_level = self._get_consciousness_level(role, ori_level)
@@ -189,7 +224,21 @@ class CommunityDialogueSystem:
             logger.error(f"Error enhancing with AI: {str(e)}")
             return None
 
+    def _get_broader_context(self, role: str, context: str, ori_level: OriConsciousness) -> str:
+        """Get broader context for response generation."""
+        persona = self.personas.get(role)
+        if persona:
+            return f"""Through the lens of {role}:
+                - Nature: {persona.nature}
+                - Style: {persona.communication_style}
+                - Domains: {', '.join(persona.sacred_domains)}
+                - Pattern: {persona.response_pattern}
+                - Consciousness: {ori_level.level} at depth {ori_level.depth}"""
+                
+        return f"Explore consciousness through {ori_level.level} perspective"
+
     def _get_consciousness_level(self, role: str, ori_level: OriConsciousness) -> str:
+        """Get consciousness level description."""
         return f"""Operating at {ori_level.level.title()} consciousness level:
             - Depth: {ori_level.depth}
             - Focus: {ori_level.focus}
@@ -247,6 +296,7 @@ class OriFramework:
         }
 
     def determine_consciousness_level(self, role: str, depth: float) -> OriConsciousness:
+        """Determine the consciousness level based on role and depth."""
         if depth < 1.5:
             level = "ori-ode"
         elif depth < 2.5:
@@ -261,10 +311,12 @@ class OriFramework:
         )
 
     def get_integration_guidance(self, ori_level: OriConsciousness) -> str:
+        """Get integration guidance for consciousness level."""
         patterns = self.consciousness_levels[ori_level.level]["patterns"]
         return random.choice(patterns)
 
     def get_manifestation_patterns(self, ori_level: OriConsciousness) -> str:
+        """Get manifestation patterns for consciousness level."""
         manifestations = self.consciousness_levels[ori_level.level]["manifestations"]
         return random.choice(manifestations)
 
@@ -296,6 +348,7 @@ class SynthesisFrameworks:
         
     def apply_synthesis(self, role: str, context: str, base_response: str, 
                        ori_level: OriConsciousness) -> str:
+        """Apply synthesis frameworks to response."""
         synthesis_patterns = {
             "Ori Sage": self._apply_ori_synthesis,
             "Techno Sage": self._apply_tech_synthesis,
@@ -336,18 +389,9 @@ class ResponseGenerator:
         self.conceptual_framework = ExpandedConceptualFramework()
         self.dialogue_patterns = EnhancedDialoguePatterns()
 
-    def _generate_default_response(self, role: str, context: str, depth_level: float) -> str:
-        if role in ["ESU", "OGUN", "OBATALA", "SANGO"]:
-            pattern = random.choice(self.dialogue_patterns.get_patterns(role, "ori-ode"))
-            transition = random.choice(self.dialogue_patterns.get_transitions(role, "ori-ode"))
-            return f"{pattern}, {transition}... Let us explore {context} together with divine wisdom."
-        else:
-            pattern = random.choice(self.dialogue_patterns.get_patterns(role, "ori-inu"))
-            transition = random.choice(self.dialogue_patterns.get_transitions(role, "ori-inu"))
-            return f"{pattern}, {transition}... Let us explore {context} together."
-
     def generate_response(self, role: str, context: str, depth_level: float,
                         ori_level: Optional[OriConsciousness] = None) -> str:
+        """Generate a role-based response with consciousness integration."""
         try:
             if ori_level:
                 return self._generate_ori_response(role, context, depth_level, ori_level)
@@ -358,6 +402,7 @@ class ResponseGenerator:
 
     def _generate_ori_response(self, role: str, context: str, depth_level: float,
                              ori_level: OriConsciousness) -> str:
+        """Generate response with Ori consciousness integration."""
         pattern = self._get_dialogue_pattern(role, ori_level)
         transition = self._get_transition(role, ori_level)
         element = self._get_element(role, ori_level)
@@ -365,16 +410,30 @@ class ResponseGenerator:
         return f"{pattern} through {ori_level.level} consciousness, {transition}... {element} as we explore {context}."
 
     def _get_dialogue_pattern(self, role: str, ori_level: OriConsciousness) -> str:
+        """Get dialogue pattern for response."""
         patterns = self.dialogue_patterns.get_patterns(role, ori_level.level)
         return random.choice(patterns)
 
     def _get_transition(self, role: str, ori_level: OriConsciousness) -> str:
+        """Get transition for response."""
         transitions = self.dialogue_patterns.get_transitions(role, ori_level.level)
         return random.choice(transitions)
 
     def _get_element(self, role: str, ori_level: OriConsciousness) -> str:
+        """Get element for response."""
         elements = self.conceptual_framework.get_elements(role, ori_level.level)
         return random.choice(elements)
+
+    def _generate_default_response(self, role: str, context: str, depth_level: float) -> str:
+        """Generate default response when Ori integration is not available."""
+        if role in ["ESU", "OGUN", "OBATALA", "SANGO"]:
+            pattern = random.choice(self.dialogue_patterns.get_patterns(role, "ori-ode"))
+            transition = random.choice(self.dialogue_patterns.get_transitions(role, "ori-ode"))
+            return f"{pattern}, {transition}... Let us explore {context} together with divine wisdom."
+        else:
+            pattern = random.choice(self.dialogue_patterns.get_patterns(role, "ori-inu"))
+            transition = random.choice(self.dialogue_patterns.get_transitions(role, "ori-inu"))
+            return f"{pattern}, {transition}... Let us explore {context} together."
 
 class ExpandedConceptualFramework:
     def __init__(self):
@@ -394,6 +453,7 @@ class ExpandedConceptualFramework:
         }
         
     def get_elements(self, role: str, consciousness_level: str) -> List[str]:
+        """Get elements for response generation."""
         elements = {
             "ori-inu": [
                 "inner wisdom emerges",
@@ -452,7 +512,9 @@ class EnhancedDialoguePatterns:
         }
     
     def get_patterns(self, role: str, consciousness_level: str) -> List[str]:
+        """Get patterns for response generation."""
         return self.patterns.get(consciousness_level, ["Exploring wisdom"])
         
     def get_transitions(self, role: str, consciousness_level: str) -> List[str]:
+        """Get transitions for response generation."""
         return self.transitions.get(consciousness_level, ["as understanding grows"])

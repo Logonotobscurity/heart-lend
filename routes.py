@@ -46,7 +46,6 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
         try:
             def fetch_topics():
                 try:
-                    # Test database connection first using text()
                     db.session.execute(text('SELECT 1'))
                     
                     topics = Topic.query.all()
@@ -71,21 +70,6 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                                 "title": "Thunder Voice Leadership",
                                 "description": "Learning from SANGO's principles of divine leadership and transformative justice",
                                 "category": "Leadership"
-                            },
-                            {
-                                "title": "Sacred Justice",
-                                "description": "Exploring divine justice through the perspectives of OGUN, OBATALA, and SANGO",
-                                "category": "Justice"
-                            },
-                            {
-                                "title": "Divine Communication",
-                                "description": "Understanding ESU's role in sacred communication and message transmission",
-                                "category": "Communication"
-                            },
-                            {
-                                "title": "Ori Consciousness",
-                                "description": "Understanding the three levels of Ori consciousness: Ori-Inu, Ori-Ode, and Ori-Apere",
-                                "category": "Consciousness"
                             }
                         ]
                         
@@ -125,8 +109,7 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
             logger.error(f"Error in get_topics: {str(e)}")
             return jsonify({
                 "status": "error",
-                "message": "An error occurred while fetching topics.",
-                "error": str(e)
+                "message": str(e)
             }), 500
 
     @api.route('/api/chat/start', methods=['POST'])
@@ -145,28 +128,30 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
             
             thread = retry_db_operation(create_chat_thread)
             
-            response = dialogue_system.generate_response(
-                role=data.get('role'),
-                context=data.get('context'),
-                conversation_style=data.get('style')
+            # Generate responses for multiple personas
+            roles = data.get('roles', [data.get('role')])
+            responses = dialogue_system.generate_multi_persona_response(
+                roles=roles,
+                context=data.get('context')
             )
             
-            def store_message():
-                message = Message(
-                    thread_id=thread.id,
-                    role=data.get('role'),
-                    content=response
-                )
-                db.session.add(message)
+            def store_messages():
+                for response in responses:
+                    message = Message(
+                        thread_id=thread.id,
+                        role=response["role"],
+                        content=response["content"]
+                    )
+                    db.session.add(message)
                 db.session.commit()
             
-            retry_db_operation(store_message)
+            retry_db_operation(store_messages)
             
             return jsonify({
                 "status": "success",
                 "data": {
                     "thread_id": thread.thread_id,
-                    "response": response
+                    "responses": responses
                 }
             })
             
@@ -174,8 +159,7 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
             logger.error(f"Error in start_chat: {str(e)}")
             return jsonify({
                 "status": "error",
-                "message": "An error occurred while starting the chat.",
-                "error": str(e)
+                "message": str(e)
             }), 500
 
     @api.route('/api/chat/continue', methods=['POST'])
@@ -189,7 +173,7 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                     "status": "error",
                     "message": "Thread ID is required."
                 }), 400
-
+            
             thread = ChatThread.query.filter_by(thread_id=thread_id).first()
             if not thread:
                 return jsonify({
@@ -197,27 +181,43 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                     "message": "Thread not found."
                 }), 404
             
-            response = dialogue_system.generate_response(
-                role=data.get('role'),
+            # Get previous messages for context
+            previous_messages = Message.query.filter_by(thread_id=thread.id)\
+                .order_by(Message.timestamp.desc())\
+                .limit(5)\
+                .all()
+            
+            previous_responses = [
+                {"role": msg.role, "content": msg.content}
+                for msg in reversed(previous_messages)
+                if msg.role != "user"
+            ]
+            
+            # Generate responses for multiple personas
+            roles = data.get('roles', [data.get('role')])
+            responses = dialogue_system.generate_multi_persona_response(
+                roles=roles,
                 context=data.get('input'),
+                previous_responses=previous_responses,
                 conversation_style=data.get('style')
             )
 
-            def store_message():
-                message = Message(
-                    thread_id=thread.id,
-                    role=data.get('role'),
-                    content=response
-                )
-                db.session.add(message)
+            def store_messages():
+                for response in responses:
+                    message = Message(
+                        thread_id=thread.id,
+                        role=response["role"],
+                        content=response["content"]
+                    )
+                    db.session.add(message)
                 db.session.commit()
 
-            retry_db_operation(store_message)
+            retry_db_operation(store_messages)
             
             return jsonify({
                 "status": "success",
                 "data": {
-                    "response": response
+                    "responses": responses
                 }
             })
             
@@ -225,8 +225,7 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
             logger.error(f"Error in continue_chat: {str(e)}")
             return jsonify({
                 "status": "error",
-                "message": "An error occurred while continuing the chat.",
-                "error": str(e)
+                "message": str(e)
             }), 500
 
     return api

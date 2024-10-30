@@ -1,13 +1,12 @@
 // Global variables with proper initialization
 let currentThread = null;
 let selectedTopic = null;
-let excludedPersonas = new Set();
+let activePersonas = new Set();
 let availablePersonas = [
     "Ori Sage", "ESU", "OBATALA", "Techno Sage", "OGUN", 
     "Quantum Observer", "Existential Explorer", "SANGO", 
     "Kara the Visionary Dreamer"
 ];
-let currentPersonaIndex = 0;
 let conversationDirection = 'balanced';
 let conversationFocus = 2;
 let isLoading = false;
@@ -30,7 +29,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeUI() {
-    // Initialize UI elements with error handling
     messageInput = document.getElementById('message-input');
     sendButton = document.getElementById('send-message');
     chatMessages = document.getElementById('chat-messages');
@@ -47,24 +45,22 @@ function initializePersonas() {
     personaCards.forEach(card => {
         card.addEventListener('click', () => {
             const role = card.dataset.role;
-            if (excludedPersonas.has(role)) {
-                excludedPersonas.delete(role);
-                card.classList.remove('excluded');
+            if (activePersonas.has(role)) {
+                activePersonas.delete(role);
+                card.classList.remove('active');
             } else {
-                excludedPersonas.add(role);
-                card.classList.add('excluded');
+                activePersonas.add(role);
+                card.classList.add('active');
             }
         });
     });
 }
 
 function initializeScrolling() {
-    // Enable smooth scrolling for chat messages
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
 function initializeMessageHandling() {
-    // Handle message sending
     sendButton.addEventListener('click', sendMessage);
     messageInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -75,7 +71,6 @@ function initializeMessageHandling() {
 }
 
 function initializeDirectionControls() {
-    // Direction buttons
     const directionButtons = document.querySelectorAll('.direction-buttons .btn');
     directionButtons.forEach(button => {
         button.addEventListener('click', () => {
@@ -85,7 +80,6 @@ function initializeDirectionControls() {
         });
     });
 
-    // Focus slider
     const focusSlider = document.getElementById('focusSlider');
     const focusValue = document.querySelector('.focus-value');
     if (focusSlider && focusValue) {
@@ -116,11 +110,11 @@ async function sendMessageWithRetry(data, retries = MAX_RETRIES) {
             body: JSON.stringify(data)
         });
 
-        const result = await response.json();
-        
         if (!response.ok) {
-            throw new Error(result.message || 'Failed to send message');
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
+        const result = await response.json();
         
         if (result.status === 'error') {
             throw new Error(result.message);
@@ -142,15 +136,12 @@ async function sendMessage() {
     const message = messageInput.value.trim();
     if (!message) return;
     
-    // Get next available persona
-    const availableRoles = availablePersonas.filter(p => !excludedPersonas.has(p));
-    if (availableRoles.length === 0) {
-        showError('Please include at least one AI guide in the conversation');
+    // Get active personas for response
+    const activeRoles = Array.from(activePersonas);
+    if (activeRoles.length === 0) {
+        showError('Please select at least one AI guide for the conversation');
         return;
     }
-
-    currentPersonaIndex = (currentPersonaIndex + 1) % availableRoles.length;
-    const respondingRole = availableRoles[currentPersonaIndex];
 
     messageInput.value = '';
     isLoading = true;
@@ -159,14 +150,14 @@ async function sendMessage() {
     try {
         const requestData = currentThread ? {
             thread_id: currentThread,
-            role: respondingRole,
+            roles: activeRoles,
             input: message,
             style: {
                 direction: conversationDirection,
                 focus: conversationFocus
             }
         } : {
-            role: respondingRole,
+            roles: activeRoles,
             context: message
         };
 
@@ -179,7 +170,14 @@ async function sendMessage() {
             currentThread = response.thread_id;
         }
 
-        addMessage(respondingRole, response.response);
+        // Handle multiple persona responses
+        if (Array.isArray(response.responses)) {
+            response.responses.forEach(r => {
+                addMessage(r.role, r.content);
+            });
+        } else {
+            addMessage(response.role, response.response);
+        }
 
     } catch (error) {
         console.error('Error sending message:', error);
@@ -193,11 +191,12 @@ async function sendMessage() {
 async function loadTopicsWithRetry(retries = MAX_RETRIES) {
     try {
         const response = await fetch('/api/topics');
-        const result = await response.json();
         
         if (!response.ok) {
-            throw new Error(result.message || 'Failed to load topics');
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
+        const result = await response.json();
         
         if (result.status === 'error') {
             throw new Error(result.message);
@@ -253,7 +252,6 @@ function selectTopic(topic) {
     });
     event.currentTarget.classList.add('active');
     
-    // Update active topics display
     updateActiveTopics(topic);
 }
 
@@ -319,7 +317,6 @@ function showError(message) {
     chatMessages.appendChild(errorDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
     
-    // Remove error message after 5 seconds
     setTimeout(() => {
         errorDiv.classList.add('fade-out');
         setTimeout(() => errorDiv.remove(), 500);
