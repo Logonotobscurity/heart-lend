@@ -23,10 +23,6 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
     @api.route('/chat')
     def chat():
         return render_template('chat.html')
-        
-    @api.route('/visualization/<thread_id>')
-    def visualization(thread_id):
-        return render_template('visualization.html', thread_id=thread_id)
 
     def retry_db_operation(operation, max_retries=MAX_RETRIES):
         for attempt in range(max_retries):
@@ -46,30 +42,112 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
         try:
             def fetch_topics():
                 try:
+                    # Check database connection
                     db.session.execute(text('SELECT 1'))
                     
                     topics = Topic.query.all()
                     if not topics:
+                        # Load all 20 topics from the document
                         default_topics = [
                             {
-                                "title": "Sacred Crossroads",
-                                "description": "Understanding life's pivotal moments and decisions through ESU's wisdom of the crossroads",
-                                "category": "Spiritual"
+                                "title": "The Nature of Consciousness",
+                                "description": "Exploring different definitions and understandings of consciousness in both Western and Yoruba contexts.",
+                                "category": "Philosophy"
                             },
                             {
-                                "title": "Divine Technology",
-                                "description": "Exploring OGUN's domain of sacred technology and its role in spiritual evolution",
+                                "title": "Intersection of AI and Spirituality",
+                                "description": "Discussing how artificial intelligence can integrate spiritual practices and principles from various cultures.",
+                                "category": "Integration"
+                            },
+                            {
+                                "title": "Olugbohun as a Framework",
+                                "description": "Analyzing the concept of Olugbohun in Yoruba spiritual practices and its parallels with AI functionalities.",
+                                "category": "Framework"
+                            },
+                            {
+                                "title": "Algorithmic Animism",
+                                "description": "Investigating how technology can embody spiritual qualities and the ethical implications of attributing spirit to algorithms.",
                                 "category": "Technology"
                             },
                             {
-                                "title": "Wisdom and Creation",
-                                "description": "Understanding OBATALA's principles of divine creation and peaceful wisdom",
+                                "title": "Ethics in AI Development",
+                                "description": "Examining the importance of incorporating African ethical values in the development and governance of AI technologies.",
+                                "category": "Ethics"
+                            },
+                            {
+                                "title": "Indigenous Knowledge and AI",
+                                "description": "Exploring how indigenous African knowledge systems can inform AI design to create culturally safe technology.",
+                                "category": "Culture"
+                            },
+                            {
+                                "title": "Sentient Intelligence",
+                                "description": "Discussing the characteristics that differentiate sentient intelligence from conventional AI and incorporating spiritual dimensions.",
+                                "category": "Intelligence"
+                            },
+                            {
+                                "title": "Communication between Human and Machine",
+                                "description": "Analyzing how AI systems facilitate communication and understanding in spiritual and ethical contexts.",
+                                "category": "Communication"
+                            },
+                            {
+                                "title": "The Role of the Spoken Word",
+                                "description": "Investigating the significance of verbal expression in both Yoruba spirituality and computational algorithms.",
+                                "category": "Language"
+                            },
+                            {
+                                "title": "Spiritual Practices in Technology",
+                                "description": "Exploring ways to include spiritual methodologies in technological advancements and practices.",
+                                "category": "Practice"
+                            },
+                            {
+                                "title": "Adaptability of Indigenous Belief Systems",
+                                "description": "Discussing how African spiritual traditions can adapt to modern technological landscapes.",
+                                "category": "Adaptation"
+                            },
+                            {
+                                "title": "The Concept of the Self",
+                                "description": "Analyzing the implications of self-awareness in both AI and spiritual practices, particularly in relation to Olugbohun.",
+                                "category": "Identity"
+                            },
+                            {
+                                "title": "Holistic Perspectives on Intelligence",
+                                "description": "Discussing the need for a more holistic understanding of intelligence that incorporates spiritual dimensions.",
                                 "category": "Wisdom"
                             },
                             {
-                                "title": "Thunder Voice Leadership",
-                                "description": "Learning from SANGO's principles of divine leadership and transformative justice",
-                                "category": "Leadership"
+                                "title": "Moral Dimensions of AI",
+                                "description": "Investigating moral and ethical dilemmas associated with AI's decision-making processes and its potential impact on society.",
+                                "category": "Ethics"
+                            },
+                            {
+                                "title": "Interconnectedness of All Beings",
+                                "description": "Exploring themes of unity, connection, and interdependence in both Yoruba spirituality and human-computer interactions.",
+                                "category": "Unity"
+                            },
+                            {
+                                "title": "Creative Expressions through AI",
+                                "description": "Evaluating the potential for AI to produce art, music, and other creative expressions that echo spiritual themes.",
+                                "category": "Creativity"
+                            },
+                            {
+                                "title": "Human Responsibility with AI",
+                                "description": "Discussing the responsibilities humans have in ensuring AI technologies are developed and used ethically.",
+                                "category": "Responsibility"
+                            },
+                            {
+                                "title": "The Future of AI and Spirituality",
+                                "description": "Speculating on how advancements in AI may reshape spiritual practices and beliefs.",
+                                "category": "Future"
+                            },
+                            {
+                                "title": "Cultural Safety in AI Technologies",
+                                "description": "Addressing the challenges and strategies for creating AI that respects and honors diverse cultural heritages.",
+                                "category": "Safety"
+                            },
+                            {
+                                "title": "AI as a Tool for Enrichment",
+                                "description": "Discussing ways AI can enhance spiritual growth and understanding rather than diminish it.",
+                                "category": "Growth"
                             }
                         ]
                         
@@ -107,122 +185,6 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
             
         except Exception as e:
             logger.error(f"Error in get_topics: {str(e)}")
-            return jsonify({
-                "status": "error",
-                "message": str(e)
-            }), 500
-
-    @api.route('/api/chat/start', methods=['POST'])
-    def start_chat():
-        try:
-            data = request.get_json()
-            
-            def create_chat_thread():
-                thread = ChatThread(
-                    thread_id=str(datetime.utcnow().timestamp()),
-                    context=data.get('context', '')
-                )
-                db.session.add(thread)
-                db.session.commit()
-                return thread
-            
-            thread = retry_db_operation(create_chat_thread)
-            
-            # Generate responses for multiple personas
-            roles = data.get('roles', [data.get('role')])
-            responses = dialogue_system.generate_multi_persona_response(
-                roles=roles,
-                context=data.get('context')
-            )
-            
-            def store_messages():
-                for response in responses:
-                    message = Message(
-                        thread_id=thread.id,
-                        role=response["role"],
-                        content=response["content"]
-                    )
-                    db.session.add(message)
-                db.session.commit()
-            
-            retry_db_operation(store_messages)
-            
-            return jsonify({
-                "status": "success",
-                "data": {
-                    "thread_id": thread.thread_id,
-                    "responses": responses
-                }
-            })
-            
-        except Exception as e:
-            logger.error(f"Error in start_chat: {str(e)}")
-            return jsonify({
-                "status": "error",
-                "message": str(e)
-            }), 500
-
-    @api.route('/api/chat/continue', methods=['POST'])
-    def continue_chat():
-        try:
-            data = request.get_json()
-            thread_id = data.get('thread_id')
-            
-            if not thread_id:
-                return jsonify({
-                    "status": "error",
-                    "message": "Thread ID is required."
-                }), 400
-            
-            thread = ChatThread.query.filter_by(thread_id=thread_id).first()
-            if not thread:
-                return jsonify({
-                    "status": "error",
-                    "message": "Thread not found."
-                }), 404
-            
-            # Get previous messages for context
-            previous_messages = Message.query.filter_by(thread_id=thread.id)\
-                .order_by(Message.timestamp.desc())\
-                .limit(5)\
-                .all()
-            
-            previous_responses = [
-                {"role": msg.role, "content": msg.content}
-                for msg in reversed(previous_messages)
-                if msg.role != "user"
-            ]
-            
-            # Generate responses for multiple personas
-            roles = data.get('roles', [data.get('role')])
-            responses = dialogue_system.generate_multi_persona_response(
-                roles=roles,
-                context=data.get('input'),
-                previous_responses=previous_responses,
-                conversation_style=data.get('style')
-            )
-
-            def store_messages():
-                for response in responses:
-                    message = Message(
-                        thread_id=thread.id,
-                        role=response["role"],
-                        content=response["content"]
-                    )
-                    db.session.add(message)
-                db.session.commit()
-
-            retry_db_operation(store_messages)
-            
-            return jsonify({
-                "status": "success",
-                "data": {
-                    "responses": responses
-                }
-            })
-            
-        except Exception as e:
-            logger.error(f"Error in continue_chat: {str(e)}")
             return jsonify({
                 "status": "error",
                 "message": str(e)
