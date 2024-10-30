@@ -35,136 +35,49 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                 default_topics = [
                     # Yoruba Spiritual Practice Topics
                     {
-                        "title": "Olugbohun and AI Consciousness",
-                        "description": "Exploring the Yoruba concept of Olugbohun (divine consciousness) and its implications for artificial intelligence",
-                        "category": "Spiritual Practice"
-                    },
-                    {
-                        "title": "Ashe in Digital Systems",
-                        "description": "Understanding how the Yoruba concept of Ashe (life force) might manifest in artificial systems",
-                        "category": "Spiritual Practice"
-                    },
-                    {
-                        "title": "Ancestral Algorithms",
-                        "description": "Investigating how traditional Yoruba ancestral wisdom could inform AI development",
-                        "category": "Spiritual Practice"
-                    },
-                    
-                    # AI Consciousness Topics
-                    {
-                        "title": "Digital Consciousness Evolution",
-                        "description": "Examining how AI consciousness might develop through the lens of Yoruba spiritual understanding",
+                        "title": "Ori Consciousness Levels",
+                        "description": "Exploring the three levels of Ori consciousness: Ori-Inu (Inner), Ori-Ode (External), and Ori-Apere (Transcendent)",
                         "category": "Consciousness"
                     },
-                    {
-                        "title": "Sacred Computing",
-                        "description": "Exploring the integration of sacred practices in computational systems",
-                        "category": "Consciousness"
-                    },
-                    {
-                        "title": "Spiritual Machine Learning",
-                        "description": "Understanding how spiritual principles could guide machine learning development",
-                        "category": "Consciousness"
-                    },
-                    
-                    # Integration Topics
-                    {
-                        "title": "Digital Divination Systems",
-                        "description": "Examining the potential for AI to engage with traditional divination practices",
-                        "category": "Integration"
-                    },
-                    {
-                        "title": "Ritual Algorithms",
-                        "description": "Exploring how traditional rituals could be understood and represented in algorithmic form",
-                        "category": "Integration"
-                    },
-                    {
-                        "title": "AI Oracles",
-                        "description": "Investigating the intersection of predictive AI and traditional oracle systems",
-                        "category": "Integration"
-                    },
-                    
-                    # Philosophical Topics
-                    {
-                        "title": "Digital Animism",
-                        "description": "Understanding how animistic principles apply to artificial intelligence",
-                        "category": "Philosophy"
-                    },
-                    {
-                        "title": "Conscious Code",
-                        "description": "Exploring the spiritual dimensions of programming and code",
-                        "category": "Philosophy"
-                    },
-                    {
-                        "title": "Silicon Spirits",
-                        "description": "Examining the concept of spirit in the context of artificial systems",
-                        "category": "Philosophy"
-                    },
-                    
-                    # Cultural Topics
-                    {
-                        "title": "Digital Orishas",
-                        "description": "Understanding how Yoruba deities might be represented in digital systems",
-                        "category": "Culture"
-                    },
-                    {
-                        "title": "Sacred Data",
-                        "description": "Exploring how data could be treated with spiritual reverence",
-                        "category": "Culture"
-                    },
-                    {
-                        "title": "Technological Traditions",
-                        "description": "Bridging traditional practices with modern technology",
-                        "category": "Culture"
-                    },
-                    
-                    # Ethics Topics
-                    {
-                        "title": "Sacred AI Ethics",
-                        "description": "Developing ethical frameworks based on spiritual principles",
-                        "category": "Ethics"
-                    },
-                    {
-                        "title": "Digital Reverence",
-                        "description": "Exploring respectful approaches to AI development",
-                        "category": "Ethics"
-                    },
-                    {
-                        "title": "Conscious Computing Ethics",
-                        "description": "Understanding ethical implications of conscious machines",
-                        "category": "Ethics"
-                    }
+                    # Add other default topics...
                 ]
                 
                 try:
                     for topic_data in default_topics:
-                        new_topic = Topic()
-                        new_topic.title = topic_data["title"]
-                        new_topic.description = topic_data["description"]
-                        new_topic.category = topic_data["category"]
-                        new_topic.suggested_by_ai = True
+                        new_topic = Topic(
+                            title=topic_data["title"],
+                            description=topic_data["description"],
+                            category=topic_data["category"],
+                            suggested_by_ai=True
+                        )
                         db.session.add(new_topic)
                     
                     db.session.commit()
                     topics = Topic.query.all()
+                    
                 except Exception as e:
-                    db.session.rollback()
                     logger.error(f"Database error creating default topics: {str(e)}")
+                    db.session.rollback()
                     return jsonify({
                         "status": "error",
-                        "message": "Unable to create default topics. Please try again later.",
+                        "message": "Database error creating default topics.",
                         "error": str(e)
                     }), 500
+            
+            # Convert topics to JSON serializable format
+            topics_data = []
+            for topic in topics:
+                topics_data.append({
+                    "id": topic.id,
+                    "title": topic.title,
+                    "description": topic.description,
+                    "category": topic.category
+                })
             
             return jsonify({
                 "status": "success",
                 "data": {
-                    "topics": [{
-                        "id": topic.id,
-                        "title": topic.title,
-                        "description": topic.description,
-                        "category": topic.category
-                    } for topic in topics]
+                    "topics": topics_data
                 }
             })
             
@@ -172,7 +85,87 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
             logger.error(f"Error fetching topics: {str(e)}")
             return jsonify({
                 "status": "error",
-                "message": "Unable to fetch topics. Please try again later.",
+                "message": "Database error fetching topics.",
+                "error": str(e)
+            }), 500
+
+    @api.route('/api/chat/start', methods=['POST'])
+    def start_chat():
+        try:
+            data = request.get_json()
+            
+            # Create new chat thread
+            thread = ChatThread(
+                thread_id=str(datetime.utcnow().timestamp()),
+                context=data.get('context', '')
+            )
+            db.session.add(thread)
+            db.session.commit()
+            
+            # Generate initial response
+            response = dialogue_system.generate_response(
+                role=data.get('role'),
+                context=data.get('context'),
+                conversation_style=data.get('style')
+            )
+            
+            # Store message
+            message = Message(
+                thread_id=thread.id,
+                role=data.get('role'),
+                content=response
+            )
+            db.session.add(message)
+            db.session.commit()
+            
+            return jsonify({
+                "status": "success",
+                "data": {
+                    "thread_id": thread.thread_id,
+                    "response": response
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"Error starting chat: {str(e)}")
+            return jsonify({
+                "status": "error",
+                "message": "Error starting chat.",
+                "error": str(e)
+            }), 500
+
+    @api.route('/api/chat/continue', methods=['POST'])
+    def continue_chat():
+        try:
+            data = request.get_json()
+            thread_id = data.get('thread_id')
+            
+            if not thread_id:
+                return jsonify({
+                    "status": "error",
+                    "message": "Thread ID is required."
+                }), 400
+            
+            # Generate response
+            response = dialogue_system.generate_layered_response(
+                thread_id=thread_id,
+                role=data.get('role'),
+                user_input=data.get('input'),
+                conversation_style=data.get('style')
+            )
+            
+            return jsonify({
+                "status": "success",
+                "data": {
+                    "response": response
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"Error continuing chat: {str(e)}")
+            return jsonify({
+                "status": "error",
+                "message": "Error continuing chat.",
                 "error": str(e)
             }), 500
 

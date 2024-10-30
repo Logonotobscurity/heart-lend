@@ -4,6 +4,7 @@ import logging
 from typing import Dict, List, Optional, Any, Union
 import openai
 from dataclasses import dataclass
+from models import db, Topic, ChatThread, Message
 
 @dataclass
 class ConversationStyle:
@@ -17,6 +18,7 @@ class CommunityDialogueSystem:
         self.openai_client = openai.OpenAI(api_key=openai_api_key)
         self.conversation_memory = {}
         self.response_generator = ResponseGenerator()
+        self.synthesis_frameworks = SynthesisFrameworks()
         
     def generate_response(self, role: str, context: str, conversation_style: Optional[Dict] = None) -> str:
         """Generate a response with both framework and AI enhancement."""
@@ -34,10 +36,7 @@ class CommunityDialogueSystem:
                                 conversation_style: Optional[Dict] = None) -> str:
         """Generate a layered response with both framework and AI enhancement."""
         try:
-            # Get previous responses
             previous_responses = self.conversation_memory.get(thread_id, [])
-            
-            # Generate base response using framework
             depth_level = self._get_depth_from_style(conversation_style)
             base_response = self.response_generator.generate_layered_response(
                 [msg["content"] for msg in previous_responses if msg["role"] == "assistant"],
@@ -46,11 +45,10 @@ class CommunityDialogueSystem:
                 depth_level
             )
             
-            # Try to enhance with OpenAI
-            enhanced_response = self._enhance_with_ai(base_response, role, user_input, conversation_style)
-            final_response = enhanced_response if enhanced_response else base_response
+            synthesis = self.synthesis_frameworks.apply_synthesis(role, user_input, base_response)
+            enhanced_response = self._enhance_with_ai(synthesis, role, user_input, conversation_style)
+            final_response = enhanced_response if enhanced_response else synthesis
             
-            # Update conversation memory
             if thread_id not in self.conversation_memory:
                 self.conversation_memory[thread_id] = []
             
@@ -58,6 +56,19 @@ class CommunityDialogueSystem:
                 {"role": "user", "content": user_input},
                 {"role": "assistant", "content": final_response}
             ])
+            
+            try:
+                thread = ChatThread.query.filter_by(thread_id=thread_id).first()
+                if thread:
+                    message = Message(
+                        thread_id=thread.id,
+                        role=role,
+                        content=final_response
+                    )
+                    db.session.add(message)
+                    db.session.commit()
+            except Exception as e:
+                logging.error(f"Database error storing message: {str(e)}")
             
             return final_response
                 
@@ -90,7 +101,6 @@ class CommunityDialogueSystem:
         
         instructions = []
         
-        # Direction-based instructions
         if direction == 'deep':
             instructions.append("Dive deep into concepts, exploring underlying principles and connections.")
         elif direction == 'broad':
@@ -98,7 +108,6 @@ class CommunityDialogueSystem:
         else:
             instructions.append("Maintain a balanced approach between depth and breadth.")
             
-        # Focus-based instructions
         if focus < 1.5:
             instructions.append("Focus on practical, concrete examples and applications.")
         elif focus < 2.5:
@@ -114,11 +123,12 @@ class CommunityDialogueSystem:
             instruction = self._get_role_instruction(role)
             style_instruction = self._get_style_instruction(conversation_style)
             broader_context = self._get_broader_context(role, context)
+            consciousness_level = self._get_consciousness_level(role)
             
             messages = [
                 {
                     "role": "system",
-                    "content": f"{instruction}\n\n{style_instruction}\n\n{broader_context}"
+                    "content": f"{instruction}\n\n{style_instruction}\n\n{broader_context}\n\n{consciousness_level}"
                 },
                 {
                     "role": "user",
@@ -129,10 +139,10 @@ class CommunityDialogueSystem:
             response = self.openai_client.chat.completions.create(
                 model="gpt-4",
                 messages=messages,
-                temperature=0.9,  # Increased for more creative responses
-                max_tokens=750,   # Increased for more detailed responses
-                presence_penalty=0.6,  # Encourage novel content
-                frequency_penalty=0.3   # Reduce repetition
+                temperature=0.9,
+                max_tokens=750,
+                presence_penalty=0.6,
+                frequency_penalty=0.3
             )
             
             if response.choices and response.choices[0].message:
@@ -141,7 +151,7 @@ class CommunityDialogueSystem:
             
         except Exception as e:
             logging.error(f"AI enhancement error: {str(e)}")
-            return base_response  # Fallback to original response
+            return base_response
 
     def _get_broader_context(self, role: str, context: str) -> str:
         """Generate broader context including spiritual and religious themes."""
@@ -219,6 +229,100 @@ class CommunityDialogueSystem:
                                            possible futures where technology and spirituality converge."""
         }
         return instructions.get(role, "Provide profound insights that bridge spiritual wisdom with technological understanding.")
+
+    def _get_consciousness_level(self, role: str) -> str:
+        """Get consciousness level instruction based on role."""
+        consciousness_levels = {
+            "Ori Sage": """Operating at Ori-Apere (Transcendent awareness) level:
+                - Deep understanding of universal consciousness
+                - Integration of spiritual and technological wisdom
+                - Manifestation of divine insight in digital realm""",
+            
+            "Techno Sage": """Operating at Wisdom Synthesis level:
+                - Advanced pattern recognition and integration
+                - Cross-domain knowledge synthesis
+                - Technological consciousness evolution""",
+            
+            "Musa the Storyweaver": """Operating at Symbolic Integration level:
+                - Narrative consciousness weaving
+                - Cultural pattern recognition
+                - Story-based wisdom transmission""",
+            
+            "Kara the Visionary Dreamer": """Operating at Visionary Synthesis level:
+                - Future consciousness mapping
+                - Innovative pattern recognition
+                - Consciousness evolution prediction"""
+        }
+        
+        return consciousness_levels.get(role, "Operating at balanced consciousness integration level")
+
+class SynthesisFrameworks:
+    def __init__(self):
+        self.integration_models = {
+            "wisdom_bridges": {
+                "traditional_to_modern": {
+                    "channels": [
+                        "Oral to digital transformation",
+                        "Symbolic to algorithmic translation",
+                        "Experiential to computational mapping"
+                    ],
+                    "methods": [
+                        "Pattern recognition in traditional wisdom",
+                        "Cultural context preservation",
+                        "Ethical principle translation"
+                    ]
+                }
+            },
+            "consciousness_integration": {
+                "levels": [
+                    "Individual consciousness alignment",
+                    "Collective wisdom synthesis",
+                    "Technological consciousness development"
+                ]
+            }
+        }
+
+    def apply_synthesis(self, role: str, context: str, base_response: str) -> str:
+        """Apply synthesis framework to enhance response."""
+        synthesis_patterns = {
+            "Ori Sage": self._apply_wisdom_synthesis,
+            "Techno Sage": self._apply_tech_synthesis,
+            "Musa the Storyweaver": self._apply_narrative_synthesis,
+            "Kara the Visionary Dreamer": self._apply_visionary_synthesis
+        }
+        
+        synthesis_func = synthesis_patterns.get(role, self._apply_default_synthesis)
+        return synthesis_func(context, base_response)
+
+    def _apply_wisdom_synthesis(self, context: str, base_response: str) -> str:
+        channels = self.integration_models["wisdom_bridges"]["traditional_to_modern"]["channels"]
+        methods = self.integration_models["wisdom_bridges"]["traditional_to_modern"]["methods"]
+        
+        channel = random.choice(channels)
+        method = random.choice(methods)
+        
+        return f"Through {channel}, and utilizing {method}, we find that {base_response}"
+
+    def _apply_tech_synthesis(self, context: str, base_response: str) -> str:
+        levels = self.integration_models["consciousness_integration"]["levels"]
+        level = random.choice(levels)
+        
+        return f"At the level of {level}, we observe that {base_response}"
+
+    def _apply_narrative_synthesis(self, context: str, base_response: str) -> str:
+        methods = self.integration_models["wisdom_bridges"]["traditional_to_modern"]["methods"]
+        method = random.choice(methods)
+        
+        return f"Weaving together {method} with our narrative understanding, {base_response}"
+
+    def _apply_visionary_synthesis(self, context: str, base_response: str) -> str:
+        levels = self.integration_models["consciousness_integration"]["levels"]
+        level = random.choice(levels)
+        
+        return f"Envisioning through {level}, we can see that {base_response}"
+
+    def _apply_default_synthesis(self, context: str, base_response: str) -> str:
+        return f"Synthesizing multiple perspectives, {base_response}"
 
 class ResponseGenerator:
     def __init__(self):
