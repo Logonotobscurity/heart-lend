@@ -3,6 +3,7 @@ from models import db, Topic, ChatThread, Message
 import logging
 from dialogue_system import CommunityDialogueSystem
 from datetime import datetime
+from sqlalchemy import text
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 import time
 
@@ -45,8 +46,8 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
         try:
             def fetch_topics():
                 try:
-                    # Test database connection first
-                    db.session.execute('SELECT 1')
+                    # Test database connection first using text()
+                    db.session.execute(text('SELECT 1'))
                     
                     topics = Topic.query.all()
                     if not topics:
@@ -188,12 +189,30 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                     "status": "error",
                     "message": "Thread ID is required."
                 }), 400
+
+            thread = ChatThread.query.filter_by(thread_id=thread_id).first()
+            if not thread:
+                return jsonify({
+                    "status": "error",
+                    "message": "Thread not found."
+                }), 404
             
             response = dialogue_system.generate_response(
                 role=data.get('role'),
                 context=data.get('input'),
                 conversation_style=data.get('style')
             )
+
+            def store_message():
+                message = Message(
+                    thread_id=thread.id,
+                    role=data.get('role'),
+                    content=response
+                )
+                db.session.add(message)
+                db.session.commit()
+
+            retry_db_operation(store_message)
             
             return jsonify({
                 "status": "success",

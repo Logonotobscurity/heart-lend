@@ -4,6 +4,7 @@ import logging
 from typing import Dict, List, Optional, Any, Union
 import openai
 from dataclasses import dataclass
+from sqlalchemy import text
 from models import db, Topic, ChatThread, Message
 
 logging.basicConfig(level=logging.INFO)
@@ -69,6 +70,20 @@ class CommunityDialogueSystem:
             )
         }
 
+    def _get_depth_from_style(self, style: Optional[Dict]) -> float:
+        if not style:
+            return 1.0
+        direction = style.get('direction', 'balanced')
+        focus = float(style.get('focus', 2.0))
+        
+        depth_multipliers = {
+            'deep': 1.5,
+            'broad': 0.8,
+            'balanced': 1.0
+        }
+        
+        return min(focus * depth_multipliers.get(direction, 1.0), 3.0)
+
     def _get_persona(self, role: str) -> Optional[YorubaPersona]:
         return self.personas.get(role)
 
@@ -110,7 +125,7 @@ class CommunityDialogueSystem:
                 
         except Exception as e:
             logger.error(f"Error generating response: {str(e)}")
-            return self.response_generator.generate_response(role, context, 1.0, None)
+            return self.response_generator._generate_default_response(role, context, 1.0)
 
     def _get_broader_context(self, role: str, context: str, ori_level: OriConsciousness) -> str:
         persona = self._get_persona(role)
@@ -152,6 +167,27 @@ class CommunityDialogueSystem:
         }
         
         return contexts.get(role, f"Explore consciousness through {ori_level.level} perspective")
+
+    def _enhance_with_ai(self, base_response: str, role: str, context: str, conversation_style: Optional[Dict], ori_level: OriConsciousness) -> Optional[str]:
+        try:
+            broader_context = self._get_broader_context(role, context, ori_level)
+            consciousness_level = self._get_consciousness_level(role, ori_level)
+            
+            response = self.openai_client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": f"You are {role}. {broader_context}. {consciousness_level}"},
+                    {"role": "user", "content": f"Context: {context}\nBase response: {base_response}\nEnhance this response with deeper consciousness and Yoruba wisdom."}
+                ],
+                temperature=0.7,
+                max_tokens=200
+            )
+            
+            return response.choices[0].message.content
+            
+        except Exception as e:
+            logger.error(f"Error enhancing with AI: {str(e)}")
+            return None
 
     def _get_consciousness_level(self, role: str, ori_level: OriConsciousness) -> str:
         return f"""Operating at {ori_level.level.title()} consciousness level:
@@ -300,6 +336,16 @@ class ResponseGenerator:
         self.conceptual_framework = ExpandedConceptualFramework()
         self.dialogue_patterns = EnhancedDialoguePatterns()
 
+    def _generate_default_response(self, role: str, context: str, depth_level: float) -> str:
+        if role in ["ESU", "OGUN", "OBATALA", "SANGO"]:
+            pattern = random.choice(self.dialogue_patterns.get_patterns(role, "ori-ode"))
+            transition = random.choice(self.dialogue_patterns.get_transitions(role, "ori-ode"))
+            return f"{pattern}, {transition}... Let us explore {context} together with divine wisdom."
+        else:
+            pattern = random.choice(self.dialogue_patterns.get_patterns(role, "ori-inu"))
+            transition = random.choice(self.dialogue_patterns.get_transitions(role, "ori-inu"))
+            return f"{pattern}, {transition}... Let us explore {context} together."
+
     def generate_response(self, role: str, context: str, depth_level: float,
                         ori_level: Optional[OriConsciousness] = None) -> str:
         try:
@@ -308,7 +354,7 @@ class ResponseGenerator:
             return self._generate_default_response(role, context, depth_level)
         except Exception as e:
             logger.error(f"Error generating response: {str(e)}")
-            return f"Let us explore {context} together."
+            return self._generate_default_response(role, context, depth_level)
 
     def _generate_ori_response(self, role: str, context: str, depth_level: float,
                              ori_level: OriConsciousness) -> str:
