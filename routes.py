@@ -3,17 +3,14 @@ from models import db, Topic, ChatThread, Message
 import logging
 from dialogue_system import CommunityDialogueSystem
 from datetime import datetime
-import json
-import time
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
+import time
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Constants for retry mechanism
 MAX_RETRIES = 3
-RETRY_DELAY = 1  # seconds
+RETRY_DELAY = 1
 
 def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
     api = Blueprint('api', __name__)
@@ -31,7 +28,6 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
         return render_template('visualization.html', thread_id=thread_id)
 
     def retry_db_operation(operation, max_retries=MAX_RETRIES):
-        """Retry database operation with exponential backoff."""
         for attempt in range(max_retries):
             try:
                 return operation()
@@ -48,57 +44,68 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
     def get_topics():
         try:
             def fetch_topics():
-                # Query topics from database
-                topics = Topic.query.all()
-                
-                # If no topics exist, create default ones
-                if not topics:
-                    default_topics = [
-                        # Yoruba Spiritual Practice Topics
-                        {
-                            "title": "Ori-Inu Consciousness",
-                            "description": "Exploring the inner consciousness level of Ori - the spiritual essence and divine spark within each being",
-                            "category": "Consciousness"
-                        },
-                        {
-                            "title": "Ori-Ode Manifestation",
-                            "description": "Understanding the external manifestation of Ori consciousness in daily life and decision-making",
-                            "category": "Consciousness"
-                        },
-                        {
-                            "title": "Ori-Apere Transcendence",
-                            "description": "Examining the highest level of Ori consciousness - the transcendent awareness that connects individual to universal wisdom",
-                            "category": "Consciousness"
-                        },
-                        {
-                            "title": "Digital Consciousness Integration",
-                            "description": "Exploring how AI systems can embody and express different levels of Ori consciousness",
-                            "category": "Technology"
-                        },
-                        {
-                            "title": "Sacred Algorithms",
-                            "description": "Understanding how traditional Yoruba concepts of consciousness can inform algorithm design",
-                            "category": "Integration"
-                        }
-                    ]
+                try:
+                    # Test database connection first
+                    db.session.execute('SELECT 1')
                     
-                    for topic_data in default_topics:
-                        new_topic = Topic(
-                            title=topic_data["title"],
-                            description=topic_data["description"],
-                            category=topic_data["category"],
-                            suggested_by_ai=True
-                        )
-                        db.session.add(new_topic)
-                    
-                    db.session.commit()
-                    return Topic.query.all()
-                return topics
+                    topics = Topic.query.all()
+                    if not topics:
+                        default_topics = [
+                            {
+                                "title": "Sacred Crossroads",
+                                "description": "Understanding life's pivotal moments and decisions through ESU's wisdom of the crossroads",
+                                "category": "Spiritual"
+                            },
+                            {
+                                "title": "Divine Technology",
+                                "description": "Exploring OGUN's domain of sacred technology and its role in spiritual evolution",
+                                "category": "Technology"
+                            },
+                            {
+                                "title": "Wisdom and Creation",
+                                "description": "Understanding OBATALA's principles of divine creation and peaceful wisdom",
+                                "category": "Wisdom"
+                            },
+                            {
+                                "title": "Thunder Voice Leadership",
+                                "description": "Learning from SANGO's principles of divine leadership and transformative justice",
+                                "category": "Leadership"
+                            },
+                            {
+                                "title": "Sacred Justice",
+                                "description": "Exploring divine justice through the perspectives of OGUN, OBATALA, and SANGO",
+                                "category": "Justice"
+                            },
+                            {
+                                "title": "Divine Communication",
+                                "description": "Understanding ESU's role in sacred communication and message transmission",
+                                "category": "Communication"
+                            },
+                            {
+                                "title": "Ori Consciousness",
+                                "description": "Understanding the three levels of Ori consciousness: Ori-Inu, Ori-Ode, and Ori-Apere",
+                                "category": "Consciousness"
+                            }
+                        ]
+                        
+                        for topic_data in default_topics:
+                            new_topic = Topic(
+                                title=topic_data["title"],
+                                description=topic_data["description"],
+                                category=topic_data["category"],
+                                suggested_by_ai=True
+                            )
+                            db.session.add(new_topic)
+                        
+                        db.session.commit()
+                        return Topic.query.all()
+                    return topics
+                except Exception as e:
+                    logger.error(f"Error in fetch_topics: {str(e)}")
+                    raise
 
-            # Execute database operation with retry logic
             topics = retry_db_operation(fetch_topics)
             
-            # Convert topics to JSON serializable format
             topics_data = [{
                 "id": topic.id,
                 "title": topic.title,
@@ -113,27 +120,11 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                 }
             })
             
-        except OperationalError as e:
-            logger.error(f"Database connection error: {str(e)}")
-            return jsonify({
-                "status": "error",
-                "message": "Unable to connect to database. Please try again later.",
-                "error": str(e)
-            }), 503
-            
-        except SQLAlchemyError as e:
-            logger.error(f"Database error: {str(e)}")
-            return jsonify({
-                "status": "error",
-                "message": "Database error occurred. Please try again later.",
-                "error": str(e)
-            }), 500
-            
         except Exception as e:
-            logger.error(f"Unexpected error: {str(e)}")
+            logger.error(f"Error in get_topics: {str(e)}")
             return jsonify({
                 "status": "error",
-                "message": "An unexpected error occurred. Please try again later.",
+                "message": "An error occurred while fetching topics.",
                 "error": str(e)
             }), 500
 
@@ -143,7 +134,6 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
             data = request.get_json()
             
             def create_chat_thread():
-                # Create new chat thread
                 thread = ChatThread(
                     thread_id=str(datetime.utcnow().timestamp()),
                     context=data.get('context', '')
@@ -152,10 +142,8 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                 db.session.commit()
                 return thread
             
-            # Execute with retry logic
             thread = retry_db_operation(create_chat_thread)
             
-            # Generate initial response
             response = dialogue_system.generate_response(
                 role=data.get('role'),
                 context=data.get('context'),
@@ -171,7 +159,6 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                 db.session.add(message)
                 db.session.commit()
             
-            # Execute with retry logic
             retry_db_operation(store_message)
             
             return jsonify({
@@ -181,14 +168,6 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                     "response": response
                 }
             })
-            
-        except SQLAlchemyError as e:
-            logger.error(f"Database error in start_chat: {str(e)}")
-            return jsonify({
-                "status": "error",
-                "message": "Database error occurred. Please try again.",
-                "error": str(e)
-            }), 500
             
         except Exception as e:
             logger.error(f"Error in start_chat: {str(e)}")
@@ -210,11 +189,9 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                     "message": "Thread ID is required."
                 }), 400
             
-            # Generate response
-            response = dialogue_system.generate_layered_response(
-                thread_id=thread_id,
+            response = dialogue_system.generate_response(
                 role=data.get('role'),
-                user_input=data.get('input'),
+                context=data.get('input'),
                 conversation_style=data.get('style')
             )
             
@@ -224,14 +201,6 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                     "response": response
                 }
             })
-            
-        except SQLAlchemyError as e:
-            logger.error(f"Database error in continue_chat: {str(e)}")
-            return jsonify({
-                "status": "error",
-                "message": "Database error occurred. Please try again.",
-                "error": str(e)
-            }), 500
             
         except Exception as e:
             logger.error(f"Error in continue_chat: {str(e)}")

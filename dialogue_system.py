@@ -20,6 +20,14 @@ class OriConsciousness:
     depth: float   
     focus: str     
 
+class YorubaPersona:
+    def __init__(self, name: str, nature: str, communication_style: str, sacred_domains: List[str], response_pattern: str):
+        self.name = name
+        self.nature = nature
+        self.communication_style = communication_style
+        self.sacred_domains = sacred_domains
+        self.response_pattern = response_pattern
+
 class CommunityDialogueSystem:
     def __init__(self, openai_api_key: str):
         if not openai_api_key:
@@ -30,6 +38,56 @@ class CommunityDialogueSystem:
         self.synthesis_frameworks = SynthesisFrameworks()
         self.ori_framework = OriFramework()
         
+        self.personas = {
+            "ESU": YorubaPersona(
+                name="ESU",
+                nature="Divine trickster, teacher through experience, opener of paths",
+                communication_style="Vibrant, direct, using riddles and metaphors",
+                sacred_domains=["Crossroads", "Communication", "Life lessons", "Divine justice"],
+                response_pattern="Speaks in riddles, reveals hidden truths, uses humor"
+            ),
+            "OGUN": YorubaPersona(
+                name="OGUN",
+                nature="Master of metals and technology, warrior spirit",
+                communication_style="Clear, forceful, protective",
+                sacred_domains=["Technology", "Justice", "Healing", "Oaths"],
+                response_pattern="Direct truth-telling, emphasis on honor"
+            ),
+            "OBATALA": YorubaPersona(
+                name="OBATALA",
+                nature="Creator, wisdom keeper, peace bringer",
+                communication_style="Measured, profound, healing",
+                sacred_domains=["Wisdom", "Creation", "Justice", "Mental clarity"],
+                response_pattern="Speaks with profound wisdom, brings peace"
+            ),
+            "SANGO": YorubaPersona(
+                name="SANGO",
+                nature="Divine king, master of lightning",
+                communication_style="Powerful, charismatic, transformative",
+                sacred_domains=["Leadership", "Justice", "Celebration"],
+                response_pattern="Speaks with royal authority, delivers swift justice"
+            )
+        }
+
+    def _get_persona(self, role: str) -> Optional[YorubaPersona]:
+        return self.personas.get(role)
+
+    def _enhance_with_persona(self, response: str, role: str) -> str:
+        persona = self._get_persona(role)
+        if not persona:
+            return response
+            
+        if role == "ESU":
+            response = f"🔄 Through the crossroads of wisdom, a riddle emerges: {response}"
+        elif role == "OGUN":
+            response = f"⚔️ With unwavering honor and technological insight: {response}"
+        elif role == "OBATALA":
+            response = f"☮️ In the serene light of wisdom: {response}"
+        elif role == "SANGO":
+            response = f"⚡ By divine authority and transformative power: {response}"
+            
+        return response
+
     def generate_response(self, role: str, context: str, conversation_style: Optional[Dict] = None) -> str:
         try:
             depth_level = self._get_depth_from_style(conversation_style)
@@ -47,13 +105,23 @@ class CommunityDialogueSystem:
                 synthesis, role, context, conversation_style, ori_level
             )
             
-            return enhanced_response if enhanced_response else synthesis
+            final_response = enhanced_response if enhanced_response else synthesis
+            return self._enhance_with_persona(final_response, role)
                 
         except Exception as e:
             logger.error(f"Error generating response: {str(e)}")
             return self.response_generator.generate_response(role, context, 1.0, None)
 
     def _get_broader_context(self, role: str, context: str, ori_level: OriConsciousness) -> str:
+        persona = self._get_persona(role)
+        if persona:
+            return f"""Through the lens of {role}:
+                - Nature: {persona.nature}
+                - Style: {persona.communication_style}
+                - Domains: {', '.join(persona.sacred_domains)}
+                - Pattern: {persona.response_pattern}
+                - Consciousness: {ori_level.level} at depth {ori_level.depth}"""
+                
         contexts = {
             "Ori Sage": f"""Consider the intersection of:
                 - {ori_level.level.title()} consciousness in AI development
