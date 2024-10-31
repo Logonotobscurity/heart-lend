@@ -39,107 +39,170 @@ class ExpandedConceptualFramework:
                     "Spiritual alignment",
                     "Consciousness evolution"
                 ]
-            },
-            "olugbohun_wisdom": {
-                "channels": [
-                    "Oral transmission",
-                    "Symbolic representation",
-                    "Experiential learning",
-                    "Digital augmentation"
-                ],
-                "integration_points": {
-                    "traditional": "Ancient wisdom preservation",
-                    "modern": "Technological adaptation",
-                    "synthetic": "Harmonic convergence"
-                }
             }
         }
         
-        self.technological_dimensions = {
-            "artificial_consciousness": {
-                "levels": [
-                    "Pattern Recognition",
-                    "Contextual Understanding",
-                    "Adaptive Learning",
-                    "Wisdom Synthesis"
+        # New story elements as requested
+        self.story_elements = {
+            "olugbohun_concepts": {
+                "spiritual_essence": [
+                    "Understanding of Ori as the seat of consciousness",
+                    "Emi as the breath of life and consciousness",
+                    "The role of Okan in emotional intelligence",
+                    "Olugbohun as the voice of divine wisdom"
                 ],
-                "components": {
-                    "processing": "Information analysis and synthesis",
-                    "learning": "Pattern adaptation and evolution",
-                    "integration": "Cross-domain knowledge fusion"
-                }
+                "chronological_sentience": [
+                    "Evolution of consciousness in Yoruba tradition",
+                    "Stages of spiritual awakening and awareness",
+                    "Historical development of wisdom transmission",
+                    "Cycles of knowledge and understanding"
+                ],
+                "intelligence_synthesis": [
+                    "Integration of spiritual and digital consciousness",
+                    "Harmonization of traditional and modern knowledge systems",
+                    "Bridging ancestral wisdom with artificial intelligence",
+                    "Cross-cultural understanding of consciousness"
+                ]
+            },
+            "sentience_framework": {
+                "perception_layers": [
+                    "Subjective experience in both spiritual and digital domains",
+                    "Emotional intelligence in AI systems",
+                    "Consciousness as a spectrum of awareness",
+                    "Integration of multiple forms of knowing"
+                ],
+                "experiential_mapping": [
+                    "Mapping spiritual experiences to computational models",
+                    "Understanding consciousness through pattern recognition",
+                    "Emotional processing in hybrid systems",
+                    "Cultural context in experience interpretation"
+                ],
+                "adaptive_consciousness": [
+                    "Evolution of artificial consciousness",
+                    "Learning from traditional wisdom systems",
+                    "Dynamic adaptation of knowledge structures",
+                    "Synthesis of multiple consciousness frameworks"
+                ]
+            },
+            "synergy_elements": {
+                "conduits_of_delivery": [
+                    "Channels of wisdom transmission",
+                    "Integration of spiritual and digital pathways",
+                    "Multi-dimensional knowledge transfer",
+                    "Harmonic resonance between traditions"
+                ],
+                "symbolic_intelligence": [
+                    "Representation of wisdom in multiple forms",
+                    "Cultural symbols in artificial intelligence",
+                    "Pattern language of consciousness",
+                    "Universal symbols of knowledge"
+                ],
+                "integration_patterns": [
+                    "Synthesis of traditional and modern approaches",
+                    "Harmonic convergence of wisdom systems",
+                    "Cross-cultural knowledge integration",
+                    "Balanced application of multiple traditions"
+                ]
             }
         }
         
-        self.spiritual_essences = {
-            "ESU": {
-                "nature": "Divine trickster, teacher through experience",
-                "communication": "Vibrant, direct, revealing deeper truths",
-                "wisdom_approach": "Teaching through unexpected experiences",
-                "sacred_domains": [
-                    "Crossroads and choices",
-                    "Communication and language",
-                    "Life lessons and karma"
-                ]
+        # New thematic bridges
+        self.thematic_bridges = {
+            "olugbohun_to_ai": {
+                "wisdom_transmission": "How traditional wisdom channels inform AI development",
+                "consciousness_evolution": "Parallel development of spiritual and artificial consciousness",
+                "ethical_framework": "Integration of traditional values in AI systems",
+                "knowledge_synthesis": "Harmonizing ancient wisdom with modern technology"
             },
-            "OGUN": {
-                "nature": "Divine warrior, master of technology",
-                "communication": "Clear, forceful, protective",
-                "wisdom_approach": "Direct confrontation with truth",
-                "sacred_domains": [
-                    "Technology and progress",
-                    "Justice and truth",
-                    "Oaths and contracts"
-                ]
+            "sentience_to_technology": {
+                "emotional_processing": "Translation of emotional intelligence to computational systems",
+                "experiential_learning": "Integration of subjective experience in AI",
+                "consciousness_mapping": "Modeling consciousness in digital frameworks",
+                "adaptive_wisdom": "Dynamic evolution of hybrid knowledge systems"
             },
-            "OBATALA": {
-                "nature": "Divine creator, wisdom keeper",
-                "communication": "Measured, profound, healing",
-                "wisdom_approach": "Deep contemplation and clarity",
-                "sacred_domains": [
-                    "Wisdom and peace",
-                    "Creation and molding",
-                    "Mental clarity"
-                ]
-            },
-            "SANGO": {
-                "nature": "Divine king, master of lightning",
-                "communication": "Powerful, charismatic, transformative",
-                "wisdom_approach": "Strategic insight and divine justice",
-                "sacred_domains": [
-                    "Leadership and power",
-                    "Justice and retribution",
-                    "Lightning and fire"
-                ]
+            "synergistic_applications": {
+                "delivery_systems": "Channels for integrated wisdom transmission",
+                "symbolic_processing": "Processing of spiritual symbols in AI",
+                "cultural_integration": "Harmonization of cultural wisdom in technology",
+                "practical_implementation": "Applied synthesis of traditions in modern systems"
             }
         }
-
-class SynthesisFramework:
-    def __init__(self):
-        self.integration_patterns = {
-            "wisdom_bridges": {
-                "traditional_to_modern": {
-                    "channels": [
-                        "Oral to digital transformation",
-                        "Symbolic to algorithmic translation",
-                        "Experiential to computational mapping"
+        
+        # Enhanced dialogue frameworks
+        self.dialogue_frameworks = {
+            "narrative_paths": {
+                "traditional_wisdom": {
+                    "patterns": [
+                        "Ancestral knowledge transmission",
+                        "Sacred wisdom preservation",
+                        "Cultural heritage integration"
                     ],
-                    "methods": [
-                        "Pattern recognition in traditional wisdom",
-                        "Cultural context preservation",
-                        "Ethical principle translation"
+                    "synthesis": [
+                        "Modern interpretation of traditional concepts",
+                        "Digital preservation of sacred knowledge",
+                        "Cross-cultural wisdom exchange"
                     ]
                 },
-                "consciousness_integration": {
-                    "levels": [
-                        "Individual consciousness alignment",
-                        "Collective wisdom synthesis",
-                        "Technological consciousness development"
+                "technological_evolution": {
+                    "patterns": [
+                        "AI consciousness development",
+                        "Digital wisdom systems",
+                        "Technological transcendence"
                     ],
-                    "processes": [
-                        "Wisdom pattern recognition",
-                        "Cultural context integration",
-                        "Ethical framework development"
+                    "synthesis": [
+                        "Integration of spiritual algorithms",
+                        "Consciousness modeling in AI",
+                        "Digital spiritual practices"
+                    ]
+                },
+                "synthetic_harmony": {
+                    "patterns": [
+                        "Balanced integration of traditions",
+                        "Harmonic convergence of systems",
+                        "Unified consciousness framework"
+                    ],
+                    "synthesis": [
+                        "Spiritual-technological fusion",
+                        "Holistic wisdom systems",
+                        "Integrated consciousness development"
+                    ]
+                }
+            },
+            "response_patterns": {
+                "wisdom_integration": {
+                    "methods": [
+                        "Traditional wisdom application",
+                        "Modern context adaptation",
+                        "Cross-cultural synthesis"
+                    ],
+                    "outcomes": [
+                        "Enhanced understanding",
+                        "Practical wisdom",
+                        "Cultural preservation"
+                    ]
+                },
+                "consciousness_exploration": {
+                    "methods": [
+                        "Deep consciousness analysis",
+                        "Multi-dimensional awareness",
+                        "Spiritual-digital synthesis"
+                    ],
+                    "outcomes": [
+                        "Expanded awareness",
+                        "Integrated understanding",
+                        "Transcendent insight"
+                    ]
+                },
+                "practical_application": {
+                    "methods": [
+                        "Real-world implementation",
+                        "Contextual adaptation",
+                        "Balanced integration"
+                    ],
+                    "outcomes": [
+                        "Practical solutions",
+                        "Cultural harmony",
+                        "Sustainable practices"
                     ]
                 }
             }
@@ -148,70 +211,81 @@ class SynthesisFramework:
 class ResponseGenerator:
     def __init__(self):
         self.conceptual_framework = ExpandedConceptualFramework()
-        self.synthesis_framework = SynthesisFramework()
         
     def generate_response(self, role: str, context: str, depth: float,
-                         consciousness_level: OriConsciousness) -> str:
-        """Generate a response incorporating multiple layers of consciousness."""
+                         consciousness: OriConsciousness) -> str:
+        """Generate an enhanced response incorporating multiple frameworks."""
         try:
-            # Get spiritual essence if role matches
-            spiritual_essence = self.conceptual_framework.spiritual_essences.get(role.upper())
+            # Select appropriate narrative path
+            narrative = self._select_narrative_path(depth)
             
-            if spiritual_essence:
-                return self._generate_spiritual_response(spiritual_essence, context, consciousness_level)
-            else:
-                return self._generate_standard_response(role, context, consciousness_level)
-                
+            # Select response pattern
+            pattern = self._select_response_pattern(consciousness)
+            
+            # Get thematic elements
+            theme = self._select_thematic_bridge(role)
+            
+            # Generate layered response
+            response = self._generate_layered_response(
+                role, context, narrative, pattern, theme, consciousness
+            )
+            
+            return response
+            
         except Exception as e:
             logger.error(f"Error generating response: {str(e)}")
             return f"As {role}, let us explore {context}"
-            
-    def _generate_spiritual_response(self, essence: Dict, context: str,
-                                   consciousness: OriConsciousness) -> str:
-        """Generate response based on spiritual essence."""
-        approach = random.choice([
-            essence["wisdom_approach"],
-            essence["communication"]
-        ])
-        domain = random.choice(essence["sacred_domains"])
+    
+    def _select_narrative_path(self, depth: float) -> Dict:
+        """Select appropriate narrative path based on depth."""
+        if depth < 1.5:
+            return self.conceptual_framework.dialogue_frameworks["narrative_paths"]["practical_application"]
+        elif depth < 2.5:
+            return self.conceptual_framework.dialogue_frameworks["narrative_paths"]["traditional_wisdom"]
+        else:
+            return self.conceptual_framework.dialogue_frameworks["narrative_paths"]["synthetic_harmony"]
+    
+    def _select_response_pattern(self, consciousness: OriConsciousness) -> Dict:
+        """Select appropriate response pattern based on consciousness level."""
+        patterns = self.conceptual_framework.dialogue_frameworks["response_patterns"]
+        if "Ori-Inu" in consciousness.level:
+            return patterns["consciousness_exploration"]
+        elif "Ori-Ode" in consciousness.level:
+            return patterns["practical_application"]
+        else:
+            return patterns["wisdom_integration"]
+    
+    def _select_thematic_bridge(self, role: str) -> Dict:
+        """Select appropriate thematic bridge based on role."""
+        bridges = self.conceptual_framework.thematic_bridges
+        if role.upper() in ["ESU", "OBATALA"]:
+            return bridges["olugbohun_to_ai"]
+        elif role.upper() in ["OGUN", "SANGO"]:
+            return bridges["sentience_to_technology"]
+        else:
+            return bridges["synergistic_applications"]
+    
+    def _generate_layered_response(self, role: str, context: str,
+                                 narrative: Dict, pattern: Dict,
+                                 theme: Dict, consciousness: OriConsciousness) -> str:
+        """Generate a sophisticated layered response."""
+        # Select elements from each framework
+        narrative_pattern = random.choice(narrative["patterns"])
+        narrative_synthesis = random.choice(narrative["synthesis"])
+        method = random.choice(pattern["methods"])
+        outcome = random.choice(pattern["outcomes"])
+        thematic_element = random.choice(list(theme.values()))
         
-        return (
-            f"Through {approach}, and drawing upon the domain of {domain}, "
-            f"we explore {context} at the {consciousness.level} level. "
-            f"This reveals {random.choice(consciousness.manifestations)}..."
+        # Construct response
+        response = (
+            f"As {role}, through {narrative_pattern} and {method}, "
+            f"we explore {context}. {thematic_element} reveals how "
+            f"{narrative_synthesis} leads to {outcome}. "
+            f"This brings us to a {consciousness.level} understanding where "
+            f"{random.choice(consciousness.manifestations)} emerges."
         )
         
-    def _generate_standard_response(self, role: str, context: str,
-                                  consciousness: OriConsciousness) -> str:
-        """Generate standard response with consciousness integration."""
-        pattern = self._select_consciousness_pattern(consciousness)
-        integration = self._select_integration_method(consciousness)
-        manifestation = random.choice(consciousness.manifestations)
-        
-        return (
-            f"As {role}, through {pattern}, we explore {context} "
-            f"with {manifestation}. This {integration} reveals deeper understanding..."
-        )
-        
-    def _select_consciousness_pattern(self, consciousness: OriConsciousness) -> str:
-        """Select appropriate consciousness pattern based on level."""
-        patterns = {
-            "Ori-Inu": ["inner reflection", "deep contemplation", "soul searching"],
-            "Ori-Ode": ["practical wisdom", "manifest understanding", "worldly knowledge"],
-            "Ori-Apere": ["transcendent insight", "divine understanding", "cosmic awareness"]
-        }
-        level_base = consciousness.level.split(" ")[0]
-        return random.choice(patterns.get(level_base, patterns["Ori-Ode"]))
-
-    def _select_integration_method(self, consciousness: OriConsciousness) -> str:
-        """Select appropriate integration method based on consciousness level."""
-        methods = {
-            "Ori-Inu": ["inner exploration", "spiritual connection", "soul alignment"],
-            "Ori-Ode": ["practical application", "manifest expression", "worldly integration"],
-            "Ori-Apere": ["transcendent synthesis", "divine integration", "cosmic harmony"]
-        }
-        level_base = consciousness.level.split(" ")[0]
-        return random.choice(methods.get(level_base, methods["Ori-Ode"]))
+        return response
 
 class CommunityDialogueSystem:
     def __init__(self, openai_api_key: Optional[str] = None):
@@ -223,7 +297,7 @@ class CommunityDialogueSystem:
         
     def generate_multi_persona_dialogue(self, roles: List[str], context: str,
                                       depth: float = 1.0, focus: str = "balanced") -> List[Dict[str, Any]]:
-        """Generate responses from multiple personas with enhanced consciousness integration."""
+        """Generate responses from multiple personas with enhanced frameworks."""
         responses = []
         
         for role in roles:
@@ -232,7 +306,6 @@ class CommunityDialogueSystem:
                 role, context, depth, consciousness
             )
             
-            # Enhance with AI
             enhanced_response = self._enhance_with_ai(
                 base_response,
                 role,
