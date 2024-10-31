@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 import logging
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -11,13 +12,14 @@ db = SQLAlchemy()
 
 def create_app():
     app = Flask(__name__)
-    app.secret_key = "default_secret_key"  # You should use a proper secret key in production
+    app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_secret_key')
     
-    # Configure database
-    app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:postgres@localhost:5432/postgres"
+    # Configure database using environment variables
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv('DATABASE_URL')
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         "pool_recycle": 300,
-        "pool_pre_ping": True,
+        "pool_pre_ping": True
     }
     
     # Initialize database
@@ -28,7 +30,12 @@ def create_app():
         from . import routes
         from . import models
         
-        # Create database tables
-        db.create_all()
+        try:
+            # Create database tables
+            db.create_all()
+            logger.info("Database tables created successfully")
+        except Exception as e:
+            logger.error(f"Error creating database tables: {str(e)}")
+            raise
         
         return app
