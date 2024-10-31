@@ -48,7 +48,6 @@ async function loadTopicsWithRetry(retries = MAX_RETRIES) {
     
     for (let attempt = 0; attempt < retries; attempt++) {
         try {
-            // Add loading indicator
             if (attempt === 0) {
                 showLoading('Loading topics...');
             }
@@ -68,7 +67,6 @@ async function loadTopicsWithRetry(retries = MAX_RETRIES) {
                 throw new Error('Invalid response format');
             }
             
-            // Remove loading indicator
             hideLoading();
             
             logger.info(`Successfully loaded ${result.data.topics.length} topics`);
@@ -86,10 +84,9 @@ async function loadTopicsWithRetry(retries = MAX_RETRIES) {
                 continue;
             }
             
-            // Remove loading indicator and show error
             hideLoading();
             showError('Unable to load topics. Please refresh the page to try again.');
-            updateTopicsList([]); // Show empty state
+            updateTopicsList([]);
         }
     }
 
@@ -142,7 +139,6 @@ function updateTopicsList(topics) {
         return;
     }
     
-    // Group topics by category
     const groupedTopics = topics.reduce((acc, topic) => {
         if (!acc[topic.category]) {
             acc[topic.category] = [];
@@ -151,7 +147,6 @@ function updateTopicsList(topics) {
         return acc;
     }, {});
     
-    // Create category sections
     Object.entries(groupedTopics).forEach(([category, categoryTopics]) => {
         const categorySection = document.createElement('div');
         categorySection.className = 'category-section mb-4';
@@ -207,6 +202,17 @@ function initializePersonas() {
     });
 }
 
+function togglePersona(card) {
+    const role = card.dataset.role;
+    if (activePersonas.has(role)) {
+        activePersonas.delete(role);
+        card.classList.remove('active');
+    } else {
+        activePersonas.add(role);
+        card.classList.add('active');
+    }
+}
+
 // Initialize smooth scrolling
 function initializeScrolling() {
     const messagesContainer = document.getElementById('chat-messages');
@@ -259,7 +265,91 @@ function updateFocusLabel(value) {
     }
 }
 
+// Add missing functions as requested by manager
+async function sendMessage() {
+    if (isLoading || !messageInput.value.trim()) return;
+    
+    if (activePersonas.size === 0) {
+        showError('Please select at least one AI guide before sending a message.');
+        return;
+    }
+    
+    try {
+        isLoading = true;
+        const message = messageInput.value.trim();
+        messageInput.value = '';
+        
+        // Add user message to chat
+        addMessageToChat('user', message);
+        
+        // Get current conversation style
+        const style = {
+            direction: conversationDirection,
+            focus: conversationFocus
+        };
+        
+        // Generate response from active personas
+        const activeRoles = Array.from(activePersonas);
+        
+        // Make API call to generate responses
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message,
+                roles: activeRoles,
+                style,
+                topic: selectedTopic
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to get AI response');
+        }
+
+        const result = await response.json();
+        
+        // Add AI responses to chat
+        result.responses.forEach(response => {
+            addMessageToChat(response.role, response.content);
+        });
+
+    } catch (error) {
+        logger.error('Error sending message:', error);
+        showError('Failed to send message. Please try again.');
+    } finally {
+        isLoading = false;
+    }
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('chatSidebar');
+    const chatMain = document.querySelector('.chat-main');
+    
+    if (sidebar && chatMain) {
+        sidebar.classList.toggle('open');
+        chatMain.classList.toggle('sidebar-open');
+    }
+}
+
+function addMessageToChat(role, content) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message message-${role}`;
+    
+    if (role !== 'user') {
+        messageDiv.innerHTML = `<strong>${role}</strong>`;
+    }
+    
+    messageDiv.innerHTML += `<p>${content}</p>`;
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
 // Export functions for testing
 window.loadTopicsWithRetry = loadTopicsWithRetry;
 window.updateTopicsList = updateTopicsList;
 window.showError = showError;
+window.toggleSidebar = toggleSidebar;
+window.sendMessage = sendMessage;
