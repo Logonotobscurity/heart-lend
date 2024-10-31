@@ -128,6 +128,9 @@ class ResponseGenerator:
                 olugbohun_level, olugbohun_attribute, olugbohun_manifestation
             )
             
+            if not self._track_response_completion(response):
+                logger.warning(f"Generated incomplete response for role {role}")
+            
             return response
             
         except Exception as e:
@@ -181,22 +184,51 @@ class ResponseGenerator:
             "SANGO": {"theme": "divine_force", "focus": "power"}
         }
         return bridges.get(role.upper(), {"theme": "wisdom_seeker", "focus": "integration"})
+
+    def _generate_conclusion(self, role: str, theme: Dict, consciousness: OriConsciousness) -> str:
+        if role.upper() == "ESU":
+            return f"Through divine wisdom, we understand the transformative power of {theme['focus']}"
+        elif role.upper() == "OBATALA":
+            return f"In the spirit of creation, we embrace the wisdom of {theme['focus']}"
+        elif role.upper() == "OGUN":
+            return f"With divine innovation, we forge new paths in {theme['focus']}"
+        elif role.upper() == "SANGO":
+            return f"Through divine justice, we manifest the power of {theme['focus']}"
+        else:
+            return f"We integrate these insights into our understanding of {theme['focus']}"
+
+    def _track_response_completion(self, response: str) -> bool:
+        required_elements = ['introduction', 'main_content', 'theme_development', 
+                           'synthesis', 'conclusion']
+        
+        for element in required_elements:
+            if element not in response.lower():
+                logger.warning(f"Missing {element} in response")
+                return False
+        return True
     
     def _generate_layered_response(self, role: str, context: str,
                                  narrative: Dict, pattern: Dict,
                                  theme: Dict, consciousness: OriConsciousness,
                                  olugbohun_level: str, olugbohun_attribute: str,
                                  olugbohun_manifestation: str) -> str:
-        response = (
-            f"As {role}, channeling the {olugbohun_level} of Olugbohun, "
-            f"manifesting through {olugbohun_attribute}, I engage with {context}. "
-            f"Through {olugbohun_manifestation}, we explore this theme from a "
-            f"{pattern['style']} perspective, embracing {theme['theme']} with a focus on {theme['focus']}. "
-            f"This {narrative['type']} approach reveals {consciousness.level} insights, "
-            f"where {random.choice(consciousness.manifestations)} emerges in "
-            f"{narrative['focus']}."
-        )
+        intro = (f"As {role}, channeling the {olugbohun_level} of Olugbohun, "
+                f"manifesting through {olugbohun_attribute}")
         
+        main_content = (f"I observe that {context}. Through {olugbohun_manifestation}, "
+                       f"we explore this from a {pattern['style']} perspective")
+        
+        theme_development = (f"This exploration reveals how {theme['theme']} manifests "
+                           f"through {theme['focus']}, where {narrative['type']} "
+                           f"understanding emerges")
+        
+        synthesis = (f"In this {consciousness.level} state, we see that "
+                    f"{random.choice(consciousness.manifestations)} leads to "
+                    f"{narrative['focus']}")
+        
+        conclusion = self._generate_conclusion(role, theme, consciousness)
+        
+        response = f"{intro}. {main_content}. {theme_development}. {synthesis}. {conclusion}"
         return response
 
 class CommunityDialogueSystem:
