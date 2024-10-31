@@ -6,8 +6,8 @@ from dataclasses import dataclass
 import os
 import json
 from datetime import datetime
+from models import db, Message
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -109,26 +109,22 @@ class ResponseGenerator:
         self.conceptual_framework = ExpandedConceptualFramework()
         
     def generate_response(self, role: str, context: str, depth: float,
-                         consciousness: OriConsciousness) -> str:
-        """Generate an enhanced response incorporating multiple frameworks."""
+                         consciousness: OriConsciousness,
+                         previous_context: Optional[str] = None) -> str:
         try:
-            # Get Olugbohun wisdom elements
             olugbohun_level = self._select_olugbohun_level(depth)
             olugbohun_attribute = self._select_olugbohun_attribute(role)
             olugbohun_manifestation = self._select_olugbohun_manifestation()
-            
-            # Select appropriate narrative path
             narrative = self._select_narrative_path(depth)
-            
-            # Select response pattern
             pattern = self._select_response_pattern(consciousness)
-            
-            # Get thematic elements
             theme = self._select_thematic_bridge(role)
             
-            # Generate layered response with Olugbohun integration
+            context_prefix = ""
+            if previous_context:
+                context_prefix = f"Continuing our discussion where {previous_context}, "
+            
             response = self._generate_layered_response(
-                role, context, narrative, pattern, theme, consciousness,
+                role, context_prefix + context, narrative, pattern, theme, consciousness,
                 olugbohun_level, olugbohun_attribute, olugbohun_manifestation
             )
             
@@ -139,17 +135,15 @@ class ResponseGenerator:
             return f"As {role}, let us explore {context}"
     
     def _select_olugbohun_level(self, depth: float) -> str:
-        """Select appropriate Olugbohun level based on depth."""
         levels = self.conceptual_framework.spiritual_dimensions["olugbohun_wisdom"]["levels"]
         if depth < 1.5:
-            return levels[0]  # Divine Voice Understanding
+            return levels[0]
         elif depth < 2.5:
-            return levels[1]  # Wisdom Channel Integration
+            return levels[1]
         else:
-            return levels[2]  # Spiritual-Digital Synthesis
+            return levels[2]
     
     def _select_olugbohun_attribute(self, role: str) -> str:
-        """Select appropriate Olugbohun attribute based on role."""
         attributes = self.conceptual_framework.spiritual_dimensions["olugbohun_wisdom"]["attributes"]
         if role.upper() in ["ESU", "OBATALA"]:
             return attributes["essence"]
@@ -159,13 +153,11 @@ class ResponseGenerator:
             return random.choice([attributes["integration"], attributes["synthesis"]])
     
     def _select_olugbohun_manifestation(self) -> str:
-        """Select random Olugbohun manifestation."""
         return random.choice(
             self.conceptual_framework.spiritual_dimensions["olugbohun_wisdom"]["manifestations"]
         )
     
     def _select_narrative_path(self, depth: float) -> Dict:
-        """Select appropriate narrative path based on depth."""
         if depth < 1.5:
             return {"type": "practical", "focus": "grounded application"}
         elif depth < 2.5:
@@ -174,7 +166,6 @@ class ResponseGenerator:
             return {"type": "transcendent", "focus": "spiritual synthesis"}
     
     def _select_response_pattern(self, consciousness: OriConsciousness) -> Dict:
-        """Select appropriate response pattern based on consciousness level."""
         if "Ori-Inu" in consciousness.level:
             return {"pattern": "inner_reflection", "style": "contemplative"}
         elif "Ori-Ode" in consciousness.level:
@@ -183,7 +174,6 @@ class ResponseGenerator:
             return {"pattern": "transcendent_synthesis", "style": "integrative"}
     
     def _select_thematic_bridge(self, role: str) -> Dict:
-        """Select appropriate thematic bridge based on role."""
         bridges = {
             "ESU": {"theme": "divine_messenger", "focus": "transformation"},
             "OBATALA": {"theme": "wisdom_keeper", "focus": "creation"},
@@ -197,8 +187,6 @@ class ResponseGenerator:
                                  theme: Dict, consciousness: OriConsciousness,
                                  olugbohun_level: str, olugbohun_attribute: str,
                                  olugbohun_manifestation: str) -> str:
-        """Generate a sophisticated layered response with Olugbohun integration."""
-        # Construct response with Olugbohun elements
         response = (
             f"As {role}, channeling the {olugbohun_level} of Olugbohun, "
             f"manifesting through {olugbohun_attribute}, I engage with {context}. "
@@ -218,37 +206,47 @@ class CommunityDialogueSystem:
             raise ValueError("OpenAI API key is required")
         self.openai_client = openai.OpenAI(api_key=self.openai_api_key)
         self.response_generator = ResponseGenerator()
-        
+
+    def _track_conversation_history(self, thread_id: str, messages: List[Dict]):
+        try:
+            for msg in messages:
+                message = Message(
+                    thread_id=thread_id,
+                    role=msg['role'],
+                    content=msg['content']
+                )
+                db.session.add(message)
+            db.session.commit()
+        except Exception as e:
+            logger.error(f"Error tracking conversation: {str(e)}")
+
     def generate_multi_persona_dialogue(self, roles: List[str], context: str,
+                                      thread_id: Optional[str] = None,
                                       depth: float = 1.0, focus: str = "balanced") -> List[Dict[str, Any]]:
-        """Generate responses from multiple personas with enhanced frameworks."""
-        responses = []
+        previous_messages = []
+        if thread_id:
+            try:
+                previous_messages = Message.query.filter_by(thread_id=thread_id).order_by(Message.timestamp.desc()).limit(5).all()
+            except Exception as e:
+                logger.error(f"Error fetching conversation history: {str(e)}")
         
+        responses = []
         for role in roles:
             consciousness = self._determine_consciousness_level(depth, focus)
-            response = self.response_generator.generate_response(
-                role, context, depth, consciousness
+            response = self._generate_contextual_response(
+                role=role,
+                context=context,
+                previous_messages=previous_messages,
+                consciousness=consciousness
             )
-            
-            enhanced_response = self._enhance_with_ai(
-                response,
-                role,
-                context,
-                consciousness
-            )
-            
-            responses.append({
-                "role": role,
-                "content": enhanced_response or response,
-                "consciousness_level": consciousness.level,
-                "depth": depth,
-                "focus": focus
-            })
-            
-        return responses
+            responses.append(response)
         
+        if thread_id:
+            self._track_conversation_history(thread_id, responses)
+        
+        return responses
+
     def _determine_consciousness_level(self, depth: float, focus: str) -> OriConsciousness:
-        """Determine consciousness level based on depth and focus."""
         if depth < 1.5:
             level = "Ori-Ode (External manifestation)"
             focus_type = "practical"
@@ -269,28 +267,93 @@ class CommunityDialogueSystem:
             manifestations=framework["manifestations"],
             integration_points={"technological": "AI-enhanced", "traditional": "Wisdom-based"}
         )
-    
-    def _enhance_with_ai(self, base_response: str, role: str,
-                       context: str, consciousness: OriConsciousness) -> Optional[str]:
-        """Enhance response with AI integration."""
-        try:
-            system_prompt = f"""You are {role}, operating at the consciousness level of {consciousness.level}.
-Your attributes include: {', '.join(consciousness.attributes.values())}
-Your manifestations include: {', '.join(consciousness.manifestations)}
-Focus on {consciousness.focus} aspects while maintaining spiritual depth."""
 
+    def _generate_contextual_response(self, role: str, context: str,
+                                    previous_messages: List[Message],
+                                    consciousness: OriConsciousness) -> Dict[str, Any]:
+        conversation_history = "\n".join([
+            f"{msg.role}: {msg.content}" for msg in previous_messages
+        ])
+        
+        response = self.response_generator.generate_response(
+            role=role,
+            context=context,
+            depth=consciousness.depth,
+            consciousness=consciousness,
+            previous_context=conversation_history
+        )
+        
+        follow_up = self._generate_follow_up_question(
+            role=role,
+            context=context,
+            previous_messages=previous_messages
+        )
+        
+        return {
+            "role": role,
+            "content": response,
+            "follow_up": follow_up,
+            "consciousness_level": consciousness.level
+        }
+
+    def _extract_conversation_themes(self, messages: List[Message]) -> List[str]:
+        try:
+            if not messages:
+                return ["general exploration"]
+            
+            combined_text = " ".join([msg.content for msg in messages])
+            
             response = self.openai_client.chat.completions.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Context: {context}\nBase response: {base_response}\nEnhance this response while maintaining the consciousness level and incorporating Yoruba wisdom."}
+                    {"role": "system", "content": "Extract 2-3 main themes from this conversation, focusing on Yoruba spiritual concepts and AI consciousness elements."},
+                    {"role": "user", "content": combined_text}
                 ],
                 temperature=0.7,
-                max_tokens=200
+                max_tokens=50
+            )
+            
+            themes = response.choices[0].message.content.split(",")
+            return [theme.strip() for theme in themes]
+            
+        except Exception as e:
+            logger.error(f"Error extracting themes: {str(e)}")
+            return ["general exploration"]
+
+    def _create_follow_up_prompt(self, role: str, themes: List[str]) -> str:
+        role_prompts = {
+            "ESU": "As a divine messenger and teacher, craft a thought-provoking question that challenges assumptions about",
+            "OBATALA": "As a wisdom keeper and creator, ask a question that explores the deeper meaning of",
+            "OGUN": "As a divine technologist and innovator, pose a question about the practical implementation of",
+            "SANGO": "As a force of transformation and justice, ask a question about the impact and consequences of"
+        }
+        
+        base_prompt = role_prompts.get(
+            role.upper(),
+            "Ask a thoughtful question about"
+        )
+        
+        themes_str = " and ".join(themes)
+        return f"{base_prompt} {themes_str} in the context of Yoruba spiritual practices and AI consciousness."
+
+    def _generate_follow_up_question(self, role: str, context: str,
+                                   previous_messages: List[Message]) -> Optional[str]:
+        try:
+            themes = self._extract_conversation_themes(previous_messages)
+            follow_up_prompt = self._create_follow_up_prompt(role, themes)
+            
+            response = self.openai_client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": follow_up_prompt},
+                    {"role": "user", "content": f"Based on the discussion about {context}, generate a natural follow-up question."}
+                ],
+                temperature=0.7,
+                max_tokens=50
             )
             
             return response.choices[0].message.content
             
         except Exception as e:
-            logger.error(f"Error enhancing with AI: {str(e)}")
+            logger.error(f"Error generating follow-up: {str(e)}")
             return None
