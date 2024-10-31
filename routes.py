@@ -27,6 +27,33 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
     def chat():
         return render_template('chat.html')
 
+    @api.route('/api/chat', methods=['POST'])
+    def chat_response():
+        try:
+            data = request.json
+            message = data.get('message')
+            roles = data.get('roles', [])
+            style = data.get('style', {})
+            
+            responses = dialogue_system.generate_multi_persona_dialogue(
+                roles=roles,
+                context=message,
+                depth=float(style.get('focus', 2.0)),
+                focus=style.get('direction', 'balanced')
+            )
+            
+            return jsonify({
+                "status": "success",
+                "responses": responses
+            })
+            
+        except Exception as e:
+            logger.error(f"Chat response error: {str(e)}")
+            return jsonify({
+                "status": "error",
+                "message": str(e)
+            }), 500
+
     @api.route('/api/topics', methods=['GET'])
     def get_topics():
         """Get all topics with improved error handling and validation."""
@@ -65,6 +92,86 @@ def create_api_blueprint(dialogue_system: CommunityDialogueSystem) -> Blueprint:
                         "title": "Algorithmic Animism",
                         "description": "Investigating how technology can embody spiritual qualities and the ethical implications of attributing spirit to algorithms.",
                         "category": "Technology"
+                    },
+                    {
+                        "title": "Ethics in AI Development",
+                        "description": "Examining the importance of incorporating African ethical values in the development and governance of AI technologies.",
+                        "category": "Ethics"
+                    },
+                    {
+                        "title": "Indigenous Knowledge and AI",
+                        "description": "Exploring how indigenous African knowledge systems can inform AI design to create culturally safe technology.",
+                        "category": "Culture"
+                    },
+                    {
+                        "title": "Sentient Intelligence",
+                        "description": "Discussing the characteristics that differentiate sentient intelligence from conventional AI and incorporating spiritual dimensions.",
+                        "category": "Philosophy"
+                    },
+                    {
+                        "title": "Communication between Human and Machine",
+                        "description": "Analyzing how AI systems facilitate communication and understanding in spiritual and ethical contexts.",
+                        "category": "Technology"
+                    },
+                    {
+                        "title": "The Role of the Spoken Word",
+                        "description": "Investigating the significance of verbal expression in both Yoruba spirituality and computational algorithms.",
+                        "category": "Culture"
+                    },
+                    {
+                        "title": "Spiritual Practices in Technology Integration",
+                        "description": "Exploring ways to include spiritual methodologies in technological advancements and practices.",
+                        "category": "Practice"
+                    },
+                    {
+                        "title": "Adaptability of Indigenous Belief Systems",
+                        "description": "Discussing how African spiritual traditions can adapt to modern technological landscapes.",
+                        "category": "Culture"
+                    },
+                    {
+                        "title": "The Concept of the Self",
+                        "description": "Analyzing the implications of self-awareness in both AI and spiritual practices, particularly in relation to Olugbohun.",
+                        "category": "Philosophy"
+                    },
+                    {
+                        "title": "Holistic Perspectives on Intelligence",
+                        "description": "Discussing the need for a more holistic understanding of intelligence that incorporates spiritual dimensions.",
+                        "category": "Philosophy"
+                    },
+                    {
+                        "title": "Moral Dimensions of AI",
+                        "description": "Investigating moral and ethical dilemmas associated with AI's decision-making processes and its potential impact on society.",
+                        "category": "Ethics"
+                    },
+                    {
+                        "title": "Interconnectedness of All Beings",
+                        "description": "Exploring themes of unity, connection, and interdependence in both Yoruba spirituality and human-computer interactions.",
+                        "category": "Spirituality"
+                    },
+                    {
+                        "title": "Creative Expressions through AI",
+                        "description": "Evaluating the potential for AI to produce art, music, and other creative expressions that echo spiritual themes.",
+                        "category": "Culture"
+                    },
+                    {
+                        "title": "Human Responsibility with AI",
+                        "description": "Discussing the responsibilities humans have in ensuring AI technologies are developed and used ethically.",
+                        "category": "Ethics"
+                    },
+                    {
+                        "title": "The Future of AI and Spirituality",
+                        "description": "Speculating on how advancements in AI may reshape spiritual practices and beliefs.",
+                        "category": "Future"
+                    },
+                    {
+                        "title": "Cultural Safety in AI Technologies",
+                        "description": "Addressing the challenges and strategies for creating AI that respects and honors diverse cultural heritages.",
+                        "category": "Culture"
+                    },
+                    {
+                        "title": "AI as a Tool for Enrichment",
+                        "description": "Discussing ways AI can enhance spiritual growth and understanding rather than diminish it.",
+                        "category": "Practice"
                     }
                 ]
                 
